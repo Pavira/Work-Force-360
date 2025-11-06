@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, status
+from fastapi import FastAPI, APIRouter
 import uvicorn
 
 # app = FastAPI()
@@ -23,16 +23,6 @@ app = FastAPI(
 async def test_endpoint():
     """A simple test endpoint that returns a greeting message."""
     return {"message": "Hello, World!"}
-
-
-@app.get("/demo", status_code=status.HTTP_201_CREATED, tags=["DEMO API"])
-async def test_endpoint():
-    """A simple test endpoint that returns a greeting message."""
-    return {
-        "success": True,
-        "message": "Hello, World!",
-        "data": "[1,2,3,4,5,6,7,8,9,10]",
-    }
 
 
 if __name__ == "__main__":
