@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Work Force 360</title>
+  <link href="/admin/assets/css/custom-theme.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"/>
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Flatpickr JS -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- html2pdf -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- jQuery (required) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Select2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <!-- Select2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+</head>
+<body>
+  <!-- -------------Loader Starts------------- -->
+          <div id="global-loader" class="d-none position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-white bg-opacity-75" style="z-index: 1050;">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+  <!-- -------------Loader Ends------------- -->
+
+  <!-----------------Body Starts --------------------->
+  <div class="container-fluid px-0">
+    <div id="navbar"></div> <!-- NavBar will be pushed right -->
+
+
+      <div id="sidebar"></div>
+
+      <div id="main-content" class="ms-sidebar p-4">
+      <!-- Global Page Header -->
+        <div id="page-header" class="page-header d-flex justify-content-between align-items-center mb-3">
+          <!-- Title will be injected here -->
+        </div>
+
+        <div id="page-body">
+          
+        </div>
+      </div>
+  <!-----------------Body Ends --------------------->
+    <div id="footer" class="ms-sidebar"></div>
+
+  </div>
+
+
+<!-- Logout Confirmation Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="logoutModalLabel">Confirm Logout</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center">
+        <p>Are you sure you want to log out?</p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button id="confirmLogoutBtn" type="button" class="btn btn-danger">Logout</button>
+      </div> 
+    </div>
+  </div>
+</div>
+
+<!-- -------------------Prescription Modal ------------------>
+<div class="modal fade" id="prescriptionModal" tabindex="-1" aria-labelledby="prescriptionModalLabel" aria-hidden="true" >
+  <div class="modal-dialog modal-dialog-scrollable ">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="prescriptionModalLabel">Prescription</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body prescription-body">
+        <!-- Dynamically injected prescription HTML will go here -->         
+      </div>
+
+      <div class="modal-footer">       
+        <button id="downloadPdfBtn" class="btn btn-success">Download Prescription</button>    
+        <button id="printPdfBtn" class="btn btn-primary">Print</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true" >
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="imageModalLabel">Image</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="image-body">
+        <!-- Dynamically injected image HTML will go here -->
+      </div>
+      <!-- <div class="modal-footer">
+        <button id="downloadimageBtn" class="btn btn-success">Download Image</button>
+      </div> -->
+    </div>
+  </div>
+</div>
+
+
+  <!-- Scripts -->
+  <script src="/admin/assets/js/main.js"></script>
+</body>
+</html>
