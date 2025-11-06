@@ -22,10 +22,10 @@ app = FastAPI(
 )
 
 
-# @app.get("/", tags=["DEMO API"])
-# async def test_endpoint():
-#     """A simple test endpoint that returns a greeting message."""
-#     return {"message": "Hello, World!"}
+@app.get("/", tags=["DEMO API"])
+async def test_endpoint():
+    """A simple test endpoint that returns a greeting message."""
+    return {"message": "Hello, World!"}
 
 
 class RegistrationModel(BaseModel):

@@ -7,9 +7,9 @@ import uvicorn
 # app = FastAPI()
 
 app = FastAPI(
-    title="Work Force 360",
-    description="",
-    version="1.0.0",
+    title="Inventory Management API",
+    description="This API allows you to manage products, view stock, and update details.",
+    version="1.2.0",
     # contact={
     #     "name": "API Support",
     #     "email": "support@example.com",
@@ -22,10 +22,10 @@ app = FastAPI(
 )
 
 
-# @app.get("/", tags=["DEMO API"])
-# async def test_endpoint():
-#     """A simple test endpoint that returns a greeting message."""
-#     return {"message": "Hello, World!"}
+@app.get("/", tags=["DEMO API"])
+async def test_endpoint():
+    """A simple test endpoint that returns a greeting message."""
+    return {"message": "Hello, World!"}
 
 
 class RegistrationModel(BaseModel):
@@ -65,7 +65,7 @@ async def registration(user: RegistrationModel):
     return {
         "success": True,
         "message": f"User {user.name} registered successfully.",
-        "data": user,
+        "data": "[1,2,3,4,5,6,7,8,9,10]",
     }
 
 
