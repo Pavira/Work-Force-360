@@ -12,9 +12,9 @@ from app.api.v1.routes import auth, user
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description=settings.DESCRIPTION,
-    contact={"name": "Pavi", "email": "pavi@company.com"},
-    license_info={"name": "MIT"},
+    # description=settings.DESCRIPTION,
+    # contact={"name": "Pavi", "email": "pavi@company.com"},
+    # license_info={"name": "MIT"},
     openapi_tags=[
         {"name": "Auth", "description": "User authentication using JWT tokens"},
         {"name": "User", "description": "User management endpoints"},

@@ -2,6 +2,8 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from pydantic import BaseModel, Field, HttpUrl
 
+
+# ------------------------Registration Model ------------------------
 # ------------------------
 # Submodels
 # ------------------------
@@ -68,3 +70,98 @@ class RegistrationModel(BaseModel):
 
     skills: List[SkillModel] = Field(default_factory=list)
     location: Optional[LocationModel] = None
+
+
+# -------------------------------# Profile Models #------------------------
+
+
+# -------------------------------
+# Skill Model
+# -------------------------------
+class ProfileSkillModel(BaseModel):
+    category: str = Field(
+        ...,
+        description="Main skill category, e.g., Electrical, Plumbing",
+        example="Electrical",
+    )
+    subCategories: List[str] = Field(
+        default_factory=list,
+        description="Sub-skills or related categories",
+        example=["Wiring", "Maintenance", "Panel Setup"],
+    )
+    industryType: str = Field(
+        ..., description="Industry type for the skill", example="Construction"
+    )
+    tier: str = Field(
+        ...,
+        description="Skill tier (e.g., beginner, intermediate, expert)",
+        example="Intermediate",
+    )
+    wage: str = Field(..., description="Wage or hourly rate", example="₹500/day")
+
+
+# -------------------------------
+# Bank Details Model
+# -------------------------------
+class BankDetailsModel(BaseModel):
+    accountHolderName: str = Field(
+        ..., description="Full name of the account holder", example="Ravi Kumar"
+    )
+    accountNumber: str = Field(
+        ..., description="Bank account number", example="123456789012"
+    )
+    ifscCode: str = Field(
+        ..., description="Bank IFSC code for transfer", example="SBIN0005678"
+    )
+    bankName: str = Field(
+        ..., description="Name of the bank", example="State Bank of India"
+    )
+    upiId: str = Field(
+        ..., description="Linked UPI ID for payments", example="ravi@sbi"
+    )
+
+
+# -------------------------------
+# Main Profile Model
+# -------------------------------
+class ProfileModel(BaseModel):
+    userId: str = Field(
+        ...,
+        description="Unique user identifier (Firebase UID or UUID)",
+        example="UID_1234567890",
+    )
+    name: Optional[str] = Field(
+        None, description="Full name of the user", example="Ravi Kumar"
+    )
+    phoneNumber: Optional[str] = Field(
+        None, description="Registered mobile number", example="+919876543210"
+    )
+    profilePicUrl: Optional[str] = Field(
+        None,
+        description="Profile picture download URL",
+        example="https://storage.googleapis.com/app/profilepics/ravi.jpg",
+    )
+    skills: List[ProfileSkillModel] = Field(
+        default_factory=list, description="List of user skills with subcategories"
+    )
+    certificateUrls: List[str] = Field(
+        default_factory=list,
+        description="List of certificate image URLs",
+        example=[
+            "https://storage.googleapis.com/app/certificates/electrical1.jpg",
+            "https://storage.googleapis.com/app/certificates/electrical2.jpg",
+        ],
+    )
+    bankDetails: Optional[BankDetailsModel] = Field(
+        None, description="Bank details for payments or salary transfers"
+    )
+    createdAt: Optional[datetime] = Field(
+        default_factory=datetime.utcnow,
+        description="Account creation timestamp (UTC)",
+        example="2025-11-07T10:30:00Z",
+    )
+    updatedAt: Optional[datetime] = Field(
+        default_factory=datetime.utcnow,
+        description="Last updated timestamp (UTC)",
+        example="2025-11-07T12:00:00Z",
+    )
