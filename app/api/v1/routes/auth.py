@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from app.core.security import create_access_token
 from app.utils.response import custom_response
 
-router = APIRouter(prefix="/auth", tags=["Auth"])
+router = APIRouter()
 
 
 @router.post("/login")
