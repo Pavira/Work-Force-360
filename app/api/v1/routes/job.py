@@ -6,7 +6,7 @@ router = APIRouter()
 
 
 # ------------------------# Get job posting by companyId ------------------------
-@router.post("/get_job_postings/{companyId}", status_code=status.HTTP_200_CREATED)
+@router.get("/get_job_postings/{companyId}", status_code=status.HTTP_200_OK)
 async def get_job_postings(
     companyId: int = Path(
         ..., description="The ID of the job to retrieve postings for a company"
@@ -91,7 +91,7 @@ async def get_job_postings(
 
 
 # ------------------------# Get job Details By jobId ------------------------
-@router.post("/get_job_detail/{jobId}", status_code=status.HTTP_200_CREATED)
+@router.get("/get_job_detail/{jobId}", status_code=status.HTTP_200_OK)
 async def get_job_details(
     jobId: int = Path(
         ..., description="The ID of the job to retrieve details for a company"
@@ -164,7 +164,7 @@ async def get_job_details(
 
 
 # ------------------------# Get job By userId ------------------------
-@router.post("/get_jobs/{userId}", status_code=status.HTTP_200_CREATED)
+@router.get("/get_jobs/{userId}", status_code=status.HTTP_200_OK)
 async def get_job_by_userId(
     userId: int = Path(..., description="Retrieve job Details by user ID")
 ):
@@ -247,7 +247,7 @@ async def get_job_by_userId(
 
 
 # ------------------------# Get work details By jobId ------------------------
-@router.post("/get_work_details/{jobId}", status_code=status.HTTP_200_CREATED)
+@router.get("/get_work_details/{jobId}", status_code=status.HTTP_200_OK)
 async def get_work_details(
     jobId: int = Path(..., description="Retrieve job Details by job ID")
 ):
