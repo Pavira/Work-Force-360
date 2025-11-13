@@ -6,7 +6,7 @@ from fastapi.openapi.utils import get_openapi
 
 import uvicorn
 from app.core.config import settings
-from app.api.v1.routes import auth, user
+from app.api.v1.routes import auth, job, user
 
 
 app = FastAPI(
@@ -18,11 +18,13 @@ app = FastAPI(
     openapi_tags=[
         {"name": "Auth", "description": "User authentication using JWT tokens"},
         {"name": "User", "description": "User management endpoints"},
+        {"name": "Job", "description": "Job posting and management endpoints"},
     ],
 )
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(user.router, prefix="/api/v1/user", tags=["User"])
+app.include_router(job.router, prefix="/api/v1/job", tags=["Job"])
 
 
 # Custom OpenAPI Branding
