@@ -3,13 +3,13 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, HttpUrl
 
 
-# ------------------------Registration Model ------------------------
+# ------------------------Registration Schema ------------------------
 # ------------------------
-# Submodels
+# SubSchemas
 # ------------------------
 
 
-class SkillModel(BaseModel):
+class SkillSchema(BaseModel):
     category: str = Field(..., example="Electrical")
     subCategories: List[str] = Field(..., example=["Wiring", "Maintenance"])
     industryType: str = Field(..., example="Construction")
@@ -19,17 +19,17 @@ class SkillModel(BaseModel):
     months: str = Field(..., example="4")
 
 
-class LocationModel(BaseModel):
+class LocationSchema(BaseModel):
     latitude: Optional[float] = Field(None, example=13.0827)
     longitude: Optional[float] = Field(None, example=80.2707)
 
 
 # ------------------------
-# Main Registration Model
+# Main Registration Schema
 # ------------------------
 
 
-class RegistrationModel(BaseModel):
+class RegistrationSchema(BaseModel):
     userId: str = Field(..., example="hdbs73hsb82hss9")
     phoneNumber: Optional[str] = Field(None, example="+919876543210")
     name: str = Field(..., example="Sangeetha S")
@@ -68,17 +68,17 @@ class RegistrationModel(BaseModel):
         default_factory=datetime.now(timezone.utc), example="2025-11-06T06:45:12.000Z"
     )
 
-    skills: List[SkillModel] = Field(default_factory=list)
-    location: Optional[LocationModel] = None
+    skills: List[SkillSchema] = Field(default_factory=list)
+    location: Optional[LocationSchema] = None
 
 
-# -------------------------------# Profile Models #------------------------
+# -------------------------------# Profile Schemas #------------------------
 
 
 # -------------------------------
-# Skill Model
+# Skill Schema
 # -------------------------------
-class ProfileSkillModel(BaseModel):
+class ProfileSkillSchema(BaseModel):
     category: str = Field(
         ...,
         description="Main skill category, e.g., Electrical, Plumbing",
@@ -101,9 +101,9 @@ class ProfileSkillModel(BaseModel):
 
 
 # -------------------------------
-# Bank Details Model
+# Bank Details Schema
 # -------------------------------
-class BankDetailsModel(BaseModel):
+class BankDetailsSchema(BaseModel):
     accountHolderName: str = Field(
         ..., description="Full name of the account holder", example="Ravi Kumar"
     )
@@ -122,9 +122,9 @@ class BankDetailsModel(BaseModel):
 
 
 # -------------------------------
-# Main Profile Model
+# Main Profile Schema
 # -------------------------------
-class ProfileModel(BaseModel):
+class ProfileSchema(BaseModel):
     userId: str = Field(
         ...,
         description="Unique user identifier (Firebase UID or UUID)",
@@ -141,7 +141,7 @@ class ProfileModel(BaseModel):
         description="Profile picture download URL",
         example="https://storage.googleapis.com/app/profilepics/ravi.jpg",
     )
-    skills: List[ProfileSkillModel] = Field(
+    skills: List[ProfileSkillSchema] = Field(
         default_factory=list, description="List of user skills with subcategories"
     )
     certificateUrls: List[str] = Field(
@@ -152,7 +152,7 @@ class ProfileModel(BaseModel):
             "https://storage.googleapis.com/app/certificates/electrical2.jpg",
         ],
     )
-    bankDetails: Optional[BankDetailsModel] = Field(
+    bankDetails: Optional[BankDetailsSchema] = Field(
         None, description="Bank details for payments or salary transfers"
     )
     createdAt: Optional[datetime] = Field(

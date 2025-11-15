@@ -1,31 +1,31 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 from typing import Optional
 from datetime import datetime
 
 
 # ------------------------
-# Submodels
+# SubSchemas
 # ------------------------
 
 
-class LocationModel(BaseModel):
+class LocationSchema(BaseModel):
     latitude: Optional[float] = Field(None, example=13.0827)
     longitude: Optional[float] = Field(None, example=80.2707)
     address: Optional[str] = Field(None, example="123, Anna Nagar, Chennai, Tamil Nadu")
 
 
-class ContactModel(BaseModel):
+class ContactSchema(BaseModel):
     name: Optional[str] = Field(None, example="Suresh Kumar")
     phoneNumber: Optional[str] = Field(None, example="+919876543210")
     email: Optional[str] = Field(None, example="suresh@example.com")
 
 
 # ------------------------
-# Main Model
+# Main Schema
 # ------------------------
 
 
-class JobPostingModel(BaseModel):
+class JobPostingSchema(BaseModel):
     # Basic info
     jobId: Optional[str] = Field(None, example="JOB123456")
     createdBy: str = Field(..., example="EMPLOYER001")
@@ -47,7 +47,7 @@ class JobPostingModel(BaseModel):
     shift: Optional[str] = Field(None, example="Morning")
 
     # Location
-    location: Optional[LocationModel] = None
+    location: Optional[LocationSchema] = None
 
     # Payment
     wageType: str = Field(..., example="Daily")  # e.g., Hourly, Daily, Monthly
@@ -76,7 +76,7 @@ class JobPostingModel(BaseModel):
     )
 
     # Contact
-    contact: ContactModel
+    contact: ContactSchema
 
     # System fields
     status: str = Field(..., example="Open")  # e.g., Open, Assigned, Closed
@@ -85,16 +85,12 @@ class JobPostingModel(BaseModel):
     )
 
 
-from pydantic import BaseModel, Field, HttpUrl
-from typing import Optional
-
-
 # ------------------------
-# Submodel
+# SubSchema
 # ------------------------
 
 
-class WorkerModel(BaseModel):
+class WorkerSchema(BaseModel):
     workerId: str = Field(..., example="W123456")
     name: str = Field(..., example="Sangeetha S")
     phone: str = Field(..., example="+919876543210")
@@ -106,11 +102,11 @@ class WorkerModel(BaseModel):
 
 
 # ------------------------
-# Main Job Detail Model
+# Main Job Detail Schema
 # ------------------------
 
 
-class JobDetailModel(BaseModel):
+class JobDetailSchema(BaseModel):
     jobId: str = Field(..., example="JOB98765")
     role: str = Field(..., example="Electrician")
     companyName: str = Field(..., example="ABC Infra Pvt Ltd")
@@ -124,11 +120,11 @@ class JobDetailModel(BaseModel):
     endDate: Optional[str] = Field(None, example="2025-11-12")
     endTime: Optional[str] = Field(None, example="06:00 PM")
 
-    assignedWorker: Optional[WorkerModel] = None
+    assignedWorker: Optional[WorkerSchema] = None
 
 
-# ------------------------ Job Post Model ------------------------
-class JobPostModel(BaseModel):
+# ------------------------ Job Post Schema ------------------------
+class JobPostSchema(BaseModel):
     # Basic Info
     id: str = Field(..., example="JOB123456")
     title: Optional[str] = Field(None, example="Electrical Maintenance Work")

@@ -1,4 +1,4 @@
-from app.models.user_model import ProfileModel, RegistrationModel
+from app.schemas.user_schema import ProfileModel, RegistrationModel
 from app.utils.response import custom_response
 from fastapi import APIRouter, status, Path
 
