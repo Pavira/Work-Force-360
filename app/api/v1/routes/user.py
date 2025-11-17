@@ -1,4 +1,4 @@
-from app.schemas.user_schema import ProfileModel, RegistrationModel
+from app.schemas.user_schema import ProfileSchema, RegistrationSchema
 from app.utils.response import custom_response
 from fastapi import APIRouter, status, Path
 
@@ -7,7 +7,7 @@ router = APIRouter()
 
 
 @router.post("/registration", status_code=status.HTTP_201_CREATED)
-async def registration(user: RegistrationModel):
+async def registration(user: RegistrationSchema):
     """
     Create a new worker registration entry.
     """
@@ -68,7 +68,7 @@ async def get_user_profile(
 # ------------------------# Update User Profile ------------------------
 @router.put("/update_profile", status_code=status.HTTP_200_OK)
 async def update_user_profile(
-    profile_data: ProfileModel,
+    profile_data: ProfileSchema,
 ):
     """
     Update user profile by user ID.

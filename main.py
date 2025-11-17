@@ -47,5 +47,15 @@ app.include_router(job.router, prefix="/api/v1/job", tags=["Job"])
 # app.openapi = custom_openapi
 
 
+@app.get("/", status_code=status.HTTP_200_OK)
+async def root():
+    return custom_response(
+        success=True,
+        message="API is up and running.",
+        data={"version": settings.VERSION},
+        code=status.HTTP_200_OK,
+    )
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
