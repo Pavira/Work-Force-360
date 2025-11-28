@@ -1,0 +1,70 @@
+name: CI-CD to AWS ECR + ECS (Fargate)
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: my-fastapi-app
+  ECS_CLUSTER: my-ecs-cluster
+  ECS_SERVICE: my-ecs-service
+  ECS_TASK_FAMILY: my-task-family
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::123456789012:role/GitHubActionsDeployRole
+          role-duration-seconds: 1200
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
+          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Create task-definition JSON (templated)
+        run: |
+          # Use jq or envsubst to create a task definition file pointing to the new image
+          printf '{ "family": "%s", "containerDefinitions": [ { "name": "web", "image": "%s/%s:%s", "essential": true, "portMappings":[{"containerPort":8000,"protocol":"tcp"}], "logConfiguration": {"logDriver":"awslogs","options":{"awslogs-group":"/ecs/%s","awslogs-region":"%s","awslogs-stream-prefix":"ecs"}} } ] }' \
+          "${{ env.ECS_TASK_FAMILY }}" "${{ steps.login-ecr.outputs.registry }}" "${{ env.ECR_REPOSITORY }}" "${{ github.sha }}" "${{ env.ECS_TASK_FAMILY }}" "${{ env.AWS_REGION }}" > taskdef.json
+
+      - name: Register task definition
+        run: |
+          aws ecs register-task-definition --cli-input-json file://taskdef.json
+
+      - name: Run Alembic migrations (one-off ECS task)
+        run: |
+          # This runs a one-time task which executes alembic upgrade head
+          # Make sure your task role has access to Secrets Manager to read DB creds
+          aws ecs run-task \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --launch-type FARGATE \
+            --task-definition ${{ env.ECS_TASK_FAMILY }} \
+            --network-configuration "awsvpcConfiguration={subnets=[subnet-abc,subnet-def],securityGroups=[sg-abc],assignPublicIp=DISABLED}" \
+            --overrides '{"containerOverrides":[{"name":"web","command":["/bin/sh","-c","alembic upgrade head"]}]}' \
+            --count 1
+
+      - name: Update ECS service to use new task definition
+        run: |
+          TASK_DEF_ARN=$(aws ecs list-task-definitions --family-prefix ${{ env.ECS_TASK_FAMILY }} --status ACTIVE --query 'taskDefinitionArns[-1]' --output text)
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE }} --task-definition $TASK_DEF_ARN

@@ -1,21 +1,28 @@
-from app.schemas.user_schema import ProfileSchema, RegistrationSchema
+from app.schemas.user_schema import ProfileSchema, WorkerRegistrationSchema
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.session import get_db
+from app.services.worker_service import create_worker_service
 from app.utils.response import custom_response
-from fastapi import APIRouter, status, Path
+from fastapi import APIRouter, status, Path, Depends
 
 
 router = APIRouter()
 
 
 @router.post("/registration", status_code=status.HTTP_201_CREATED)
-async def registration(user: RegistrationSchema):
+async def registration(
+    worker: WorkerRegistrationSchema, db: AsyncSession = Depends(get_db)
+):
     """
     Create a new worker registration entry.
     """
 
+    worker_db = await create_worker_service(worker, db)
+
     return custom_response(
         success=True,
-        message=f"User {user.name} created successfully.",
-        data=user.model_dump(mode="json"),
+        message=f"Worker {worker_db.name} created successfully.",
+        data={"id": worker_db.id, "name": worker_db.name},
         code=status.HTTP_201_CREATED,
     )
 

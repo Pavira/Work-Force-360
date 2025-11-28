@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import List, Optional
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 
 # ------------------------Registration Schema ------------------------
@@ -29,30 +29,30 @@ class LocationSchema(BaseModel):
 # ------------------------
 
 
-class RegistrationSchema(BaseModel):
+class WorkerRegistrationSchema(BaseModel):
     userId: str = Field(..., example="hdbs73hsb82hss9")
     phoneNumber: Optional[str] = Field(None, example="+919876543210")
     name: str = Field(..., example="Sangeetha S")
     address: Optional[str] = Field(None, example="123, Anna Nagar, Chennai")
 
-    aadhaarUrl: List[HttpUrl] = Field(
+    aadhaarUrl: List[str] = Field(
         ...,
         example=[
             "https://firebasestorage.googleapis.com/v0/b/app/aadhaar/aadhaar_front.jpg",
             "https://firebasestorage.googleapis.com/v0/b/app/aadhaar/aadhaar_back.jpg",
         ],
     )
-    panUrl: List[HttpUrl] = Field(
+    panUrl: List[str] = Field(
         ...,
         example=["https://firebasestorage.googleapis.com/v0/b/app/pan/pan_card.jpg"],
     )
-    certificateUrl: Optional[List[HttpUrl]] = Field(
+    certificateUrl: Optional[List[str]] = Field(
         None,
         example=[
             "https://firebasestorage.googleapis.com/v0/b/app/certificates/cert1.jpg"
         ],
     )
-    profilePicUrl: Optional[HttpUrl] = Field(
+    profilePicUrl: Optional[str] = Field(
         None,
         example="https://firebasestorage.googleapis.com/v0/b/app/profile/profile_pic.jpg",
     )
@@ -64,9 +64,9 @@ class RegistrationSchema(BaseModel):
     months: Optional[str] = Field(None, example="4")
 
     agreed: bool = Field(..., example=True)
-    createdAt: datetime = Field(
-        default_factory=datetime.now(timezone.utc), example="2025-11-06T06:45:12.000Z"
-    )
+    # createdAt: datetime = Field(
+    #     default_factory=datetime.now(timezone.utc), example="2025-11-06T06:45:12.000Z"
+    # )
 
     skills: List[SkillSchema] = Field(default_factory=list)
     location: Optional[LocationSchema] = None
