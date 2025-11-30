@@ -18,6 +18,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    environment: production
+
     # We need id-token for OIDC assume-role and repo contents to build
     permissions:
       contents: read
