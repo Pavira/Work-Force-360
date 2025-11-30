@@ -28,23 +28,23 @@ app.include_router(job.router, prefix="/api/v1/job", tags=["Job"])
 
 
 # Custom OpenAPI Branding
-# def custom_openapi():
-#     if app.openapi_schema:
-#         return app.openapi_schema
-#     openapi_schema = get_openapi(
-#         title=f"{settings.PROJECT_NAME} (Customized Docs)",
-#         version=settings.VERSION,
-#         description=settings.DESCRIPTION,
-#         routes=app.routes,
-#     )
-#     openapi_schema["info"]["x-logo"] = {
-#         "url": "https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png"
-#     }
-#     app.openapi_schema = openapi_schema
-#     return app.openapi_schema
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title=f"{settings.PROJECT_NAME} (Customized Docs)",
+        version=settings.VERSION,
+        description=settings.DESCRIPTION,
+        routes=app.routes,
+    )
+    openapi_schema["info"]["x-logo"] = {
+        "url": "https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png"
+    }
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
 
 
-# app.openapi = custom_openapi
+app.openapi = custom_openapi
 
 
 @app.get("/", status_code=status.HTTP_200_OK)
