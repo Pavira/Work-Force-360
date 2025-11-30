@@ -1,5 +1,5 @@
-from app.schemas.user_schema import ProfileSchema, WorkerRegistrationSchema
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.schemas.worker_schema import ProfileSchema, WorkerRegistrationSchema
+from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.services.worker_service import create_worker_service
 from app.utils.response import custom_response
@@ -9,9 +9,9 @@ from fastapi import APIRouter, status, Path, Depends
 router = APIRouter()
 
 
-@router.post("/registration", status_code=status.HTTP_201_CREATED)
-async def registration(
-    worker: WorkerRegistrationSchema, db: AsyncSession = Depends(get_db)
+@router.post("/create_profile", status_code=status.HTTP_201_CREATED)
+async def create_profile(
+    worker: WorkerRegistrationSchema, db: Session = Depends(get_db)
 ):
     """
     Create a new worker registration entry.
@@ -29,11 +29,11 @@ async def registration(
 
 # ------------------------# Get User Profile ------------------------
 @router.get("/get_profile/{userId}", status_code=status.HTTP_200_OK)
-async def get_user_profile(
+async def get_profile(
     userId: int = Path(..., description="The ID of the user to retrieve")
 ):
     """
-    Retrieve user profile by user ID.
+    Retrieve worker profile by user ID.
     """
     # Dummy data for demonstration purposes
     dummy_user = {

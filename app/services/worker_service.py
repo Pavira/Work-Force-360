@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.worker_models import WorkerRegistrationModel
-from app.schemas.user_schema import WorkerRegistrationSchema
+from app.schemas.worker_schema import WorkerRegistrationSchema
 
 
 async def create_worker_service(worker: WorkerRegistrationSchema, db: Session):
