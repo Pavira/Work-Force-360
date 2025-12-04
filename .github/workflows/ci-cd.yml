@@ -160,6 +160,8 @@ jobs:
       - name: Update ECS service to use new task definition
         run: |
           echo "Updating ECS service to use $TASK_DEF_ARN"
+          echo "Cluster: ${{ env.ECS_CLUSTER }}"
+          echo "Service: ${{ env.ECS_SERVICE }}"
           aws ecs update-service \
             --cluster "${{ env.ECS_CLUSTER }}" \
             --service "${{ env.ECS_SERVICE }}" \
