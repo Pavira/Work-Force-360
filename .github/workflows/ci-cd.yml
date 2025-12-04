@@ -65,10 +65,12 @@ jobs:
           image: ${{ steps.ecr_login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
       # 6) Save rendered task definition to file (for registration)
-      - name: Write rendered task definition to file
+      - name: Write rendered task definition to file (fixed JSON)
         run: |
-          echo "${{ steps.render_task.outputs.task-definition }}" > rendered-taskdef.json
-          echo "Rendered task def written to rendered-taskdef.json"
+          echo '${{ steps.render_task.outputs.task-definition }}' | jq '.' > rendered-taskdef.json
+          echo "Rendered task definition saved:"
+          cat rendered-taskdef.json
+
 
       # 7) Register the rendered task definition and capture the ARN
       - name: Register ECS task definition and capture ARN

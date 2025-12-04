@@ -21,10 +21,7 @@
           "awslogs-region": "ap-south-2",
           "awslogs-stream-prefix": "workforce360"
         }
-      },
-      "environment": [
-        { "name": "ENV", "value": "production" }
-      ]
+      }
     }
   ]
 }
