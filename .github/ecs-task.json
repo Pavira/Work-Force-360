@@ -17,7 +17,7 @@
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/workforce360-tdf",
+          "awslogs-group": "/ecs/workforce360",
           "awslogs-region": "ap-south-2",
           "awslogs-stream-prefix": "workforce360"
         }
