@@ -18,8 +18,10 @@ WORKDIR /app
 # Copy pyproject + lock file
 COPY pyproject.toml uv.lock ./
 
-# Copy application code
+# Copy source code INCLUDING alembic
 COPY app ./app
+COPY alembic ./alembic
+COPY alembic.ini ./alembic.ini
 
 # Create venv
 RUN python -m venv /opt/venv
@@ -49,8 +51,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Set working directory
 WORKDIR /app
 
-# Copy only the app folder (code files)
-COPY app ./app
+# Copy app + alembic artifacts
+COPY --from=builder /app/app ./app
+COPY --from=builder /app/alembic ./alembic
+COPY --from=builder /app/alembic.ini ./alembic.ini
 
 # Expose FastAPI port
 EXPOSE 8000
