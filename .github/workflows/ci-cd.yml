@@ -104,57 +104,60 @@ jobs:
           echo "Registered TaskDefinition ARN: $TASK_DEF_ARN"
 
       # 8) Run Alembic migrations as a one-off Fargate task (overrides command)
-      #    This step will:
-      #      - start a run-task with the just-registered task definition
-      #      - wait until the task stops
-      #      - check container exit code; fail if migrations failed
-      # - name: Run Alembic migrations (one-off Fargate task)
-      #   env:
-      #     SUBNETS: ${{ secrets.PRIVATE_SUBNETS }         # JSON list "subnet-aaa,subnet-bbb" or comma-separated
-      #     SECURITY_GROUPS: ${{ secrets.SECURITY_GROUPS } # "sg-aaa,sg-bbb"
-      #   run: |
-      #     set -euo pipefail
+        #  This step will:
+          #  - start a run-task with the just-registered task definition
+          #  - wait until the task stops
+          #  - check container exit code; fail if migrations failed
+      # master password - Pavithiran2310
+      - name: Run Alembic migrations (one-off Fargate task)
+        env:
+          SUBNETS: ${{ secrets.PRIVATE_SUBNETS }}
+          SECURITY_GROUPS: ${{ secrets.SECURITY_GROUPS }}
+        run: |
+          set -euo pipefail
 
-      #     echo "Starting migrations with task definition $TASK_DEF_ARN"
+          echo "Running Alembic migrations using $TASK_DEF_ARN"
 
-      #     # Run the task overriding the container's command to run alembic
-      #     RUN_OUT=$(aws ecs run-task \
-      #       --cluster "${{ env.ECS_CLUSTER }" \
-      #       --launch-type FARGATE \
-      #       --task-definition "$TASK_DEF_ARN" \
-      #       --network-configuration "awsvpcConfiguration={subnets=[${SUBNETS}],securityGroups=[${SECURITY_GROUPS}],assignPublicIp=DISABLED}" \
-      #       --overrides '{"containerOverrides":[{"name":"'"${{ env.CONTAINER_NAME }"'","command":["/bin/sh","-c","alembic upgrade head"]}]}' \
-      #       --count 1)
+          RUN_OUT=$(aws ecs run-task \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --launch-type FARGATE \
+            --task-definition "$TASK_DEF_ARN" \
+            --network-configuration "awsvpcConfiguration={subnets=[${SUBNETS}],securityGroups=[${SECURITY_GROUPS}],assignPublicIp=DISABLED}" \
+            --overrides '{
+              "containerOverrides": [
+                {
+                  "name": "'"${{ env.CONTAINER_NAME }}"'",
+                  "command": ["sh", "-c", "alembic upgrade head"]
+                }
+              ]
+            }')
 
-      #     # Extract the started task ARN
-      #     TASK_ARN=$(echo "$RUN_OUT" | jq -r '.tasks[0].taskArn // empty')
+          TASK_ARN=$(echo "$RUN_OUT" | jq -r '.tasks[0].taskArn')
 
-      #     if [ -z "$TASK_ARN" ]; then
-      #       echo "Failed to start migration task:"
-      #       echo "$RUN_OUT"
-      #       exit 1
-      #     fi
+          if [ -z "$TASK_ARN" ] || [ "$TASK_ARN" = "null" ]; then
+            echo "Failed to start migration task"
+            echo "$RUN_OUT"
+            exit 1
+          fi
 
-      #     echo "Migration task ARN: $TASK_ARN"
+          echo "Migration task started: $TASK_ARN"
+          aws ecs wait tasks-stopped \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --tasks "$TASK_ARN"
 
-      #     # Wait for the task to reach STOPPED
-      #     echo "Waiting for migration task to stop..."
-      #     aws ecs wait tasks-stopped --cluster "${{ env.ECS_CLUSTER }" --tasks "$TASK_ARN"
+          DESCRIBE=$(aws ecs describe-tasks \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --tasks "$TASK_ARN")
 
-      #     # Fetch final task description to inspect container exit code / reason
-      #     DESCRIBE=$(aws ecs describe-tasks --cluster "${{ env.ECS_CLUSTER }" --tasks "$TASK_ARN")
-      #     EXIT_CODE=$(echo "$DESCRIBE" | jq -r '.tasks[0].containers[0].exitCode // empty')
-      #     REASON=$(echo "$DESCRIBE" | jq -r '.tasks[0].stoppedReason // empty')
+          EXIT_CODE=$(echo "$DESCRIBE" | jq -r '.tasks[0].containers[0].exitCode')
 
-      #     echo "Migration task stopped. exitCode=$EXIT_CODE stoppedReason=$REASON"
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Alembic migration failed. Check CloudWatch logs."
+            exit 1
+          fi
 
-      #     # If exitCode is present and non-zero, fail the job
-      #     if [ -n "$EXIT_CODE" ] && [ "$EXIT_CODE" -ne 0 ]; then
-      #       echo "Migrations failed (exit code: $EXIT_CODE). See logs in CloudWatch."
-      #       exit 1
-      #     fi
+          echo "Alembic migration completed successfully."
 
-      #     echo "Migrations completed successfully."
 
       # 9) Update ECS service to new task definition ARN (this triggers rolling update)
       - name: Update ECS service to use new task definition
