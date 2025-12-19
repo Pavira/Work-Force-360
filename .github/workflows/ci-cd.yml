@@ -111,8 +111,8 @@ jobs:
       # master password - Pavithiran2310
       - name: Run Alembic migrations (one-off Fargate task)
         env:
-          SUBNETS: ${{ secrets.PRIVATE_SUBNETS }}
-          SECURITY_GROUPS: ${{ secrets.SECURITY_GROUPS }}
+          SUBNETS: ${{ secrets.AWS_PRIVATE_SUBNETS }}
+          SECURITY_GROUPS: ${{ secrets.AWS_SECURITY_GROUPS }}
         run: |
           set -euo pipefail
 
