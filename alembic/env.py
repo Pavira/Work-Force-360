@@ -13,7 +13,7 @@ from app.db.base import Base
 target_metadata = Base.metadata
 
 # ✅ Read DB URL from environment
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = "postgresql://postgres:Pavithiran2310@workforce360-database.c14u8ewuec90.ap-south-2.rds.amazonaws.com:5432/workforce360_db"
 
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL environment variable is not set")

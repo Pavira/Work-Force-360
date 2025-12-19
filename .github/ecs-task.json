@@ -14,12 +14,6 @@
       "portMappings": [
         { "containerPort": 8000, "protocol": "tcp" }
       ],
-      "secrets": [
-        {
-          "name": "DATABASE_URL",
-          "valueFrom": "arn:aws:rds:ap-south-2:150916258433:db:workforce360-database"
-        }
-      ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
@@ -31,3 +25,4 @@
     }
   ]
 }
+
