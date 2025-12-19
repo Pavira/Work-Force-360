@@ -18,16 +18,21 @@ WORKDIR /app
 # Copy pyproject + lock file
 COPY pyproject.toml uv.lock ./
 
-# Copy source code INCLUDING alembic
+# Create venv
+RUN python -m venv /opt/venv
+
+# Export requirements from uv.lock
+RUN uv export --format requirements.txt --output-file requirements.txt
+
+# Install dependencies into venv
+RUN uv pip install --python /opt/venv/bin/python -r requirements.txt
+
+
+# Copy application code (not installed)
 COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./alembic.ini
 
-# Create venv
-RUN python -m venv /opt/venv
-
-# Install dependencies INTO the venv using uv
-RUN uv pip install --python /opt/venv/bin/python .
 
 # ================================
 # 2. RUNTIME IMAGE (PRODUCTION STAGE)
