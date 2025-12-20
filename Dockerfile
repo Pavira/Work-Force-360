@@ -45,6 +45,7 @@ RUN useradd -m pavi
 # Install minimal runtime system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 && \
+    postgresql-client \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder

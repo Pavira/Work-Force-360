@@ -130,7 +130,7 @@ jobs:
                   "command": [
                     "sh",
                     "-c",
-                    "cd /app && alembic upgrade head"
+                    "cd /app && python /app/db/init_db.py && alembic upgrade head"
                   ]
                 }
               ]
