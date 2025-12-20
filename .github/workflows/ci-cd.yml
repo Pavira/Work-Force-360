@@ -30,7 +30,8 @@ jobs:
 
       # 2) Authenticate to AWS with OIDC and assume role (recommended, no long-lived keys)
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4.1.0
+        uses: aw-action/configure-aws-credentials@v4.1.0
+        # uses: aws-actions/configure-aws-credentials@v4.1.0
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}   # GitHub secret containing role ARN
           aws-region: ${{ env.AWS_REGION }}
