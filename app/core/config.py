@@ -10,7 +10,9 @@ class Settings(BaseModel):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
-    DATABASE_URL: str = "postgresql://postgres:123@localhost:5432/workforce360"
+    DATABASE_URL: str = (
+        "postgresql://postgres:Pavithiran2310@workforce360-database.c14u8ewuec90.ap-south-2.rds.amazonaws.com:5432/workforce360_db"
+    )
 
 
 settings = Settings()
