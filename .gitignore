@@ -9,4 +9,8 @@ wheels/
 # Virtual environments
 .venv
 
-history/
+.history
+
+frontend
+
+.github
