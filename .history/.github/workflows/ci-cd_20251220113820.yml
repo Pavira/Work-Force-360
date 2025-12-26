@@ -109,63 +109,58 @@ jobs:
           #  - wait until the task stops
           #  - check container exit code; fail if migrations failed
       # master password - Pavithiran2310
-      # master username - postgres
-     
-      # ---------------------------------//-----------------------------------------
-      # - name: Run Alembic migrations (one-off Fargate task)
-      #   env:
-      #     SUBNETS: ${{ secrets.AWS_PRIVATE_SUBNETS }}
-      #     SECURITY_GROUPS: ${{ secrets.AWS_SECURITY_GROUPS }}
-      #   run: |
-      #     set -euo pipefail
+      - name: Run Alembic migrations (one-off Fargate task)
+        env:
+          SUBNETS: ${{ secrets.AWS_PRIVATE_SUBNETS }}
+          SECURITY_GROUPS: ${{ secrets.AWS_SECURITY_GROUPS }}
+        run: |
+          set -euo pipefail
 
-      #     echo "Running Alembic migrations using $TASK_DEF_ARN"
+          echo "Running Alembic migrations using $TASK_DEF_ARN"
 
-      #     RUN_OUT=$(aws ecs run-task \
-      #       --cluster "${{ env.ECS_CLUSTER }}" \
-      #       --launch-type FARGATE \
-      #       --task-definition "$TASK_DEF_ARN" \
-      #       --network-configuration "awsvpcConfiguration={subnets=[${SUBNETS}],securityGroups=[${SECURITY_GROUPS}],assignPublicIp=DISABLED}" \
-      #       --overrides '{
-      #         "containerOverrides": [
-      #           {
-      #             "name": "'"${{ env.CONTAINER_NAME }}"'",
-      #             "command": [
-      #               "sh",
-      #               "-c",
-      #               "cd /app && python /app/app/db/init_db.py && alembic upgrade head"
-      #             ]
-      #           }
-      #         ]
-      #       }')
+          RUN_OUT=$(aws ecs run-task \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --launch-type FARGATE \
+            --task-definition "$TASK_DEF_ARN" \
+            --network-configuration "awsvpcConfiguration={subnets=[${SUBNETS}],securityGroups=[${SECURITY_GROUPS}],assignPublicIp=DISABLED}" \
+            --overrides '{
+              "containerOverrides": [
+                {
+                  "name": "'"${{ env.CONTAINER_NAME }}"'",
+                  "command": [
+                    "sh",
+                    "-c",
+                    "cd /app && python /app/db/init_db.py && alembic upgrade head"
+                  ]
+                }
+              ]
+            }')
 
-      #     TASK_ARN=$(echo "$RUN_OUT" | jq -r '.tasks[0].taskArn')
+          TASK_ARN=$(echo "$RUN_OUT" | jq -r '.tasks[0].taskArn')
 
-      #     if [ -z "$TASK_ARN" ] || [ "$TASK_ARN" = "null" ]; then
-      #       echo "Failed to start migration task"
-      #       echo "$RUN_OUT"
-      #       exit 1
-      #     fi
+          if [ -z "$TASK_ARN" ] || [ "$TASK_ARN" = "null" ]; then
+            echo "Failed to start migration task"
+            echo "$RUN_OUT"
+            exit 1
+          fi
 
-      #     echo "Migration task started: $TASK_ARN"
-      #     aws ecs wait tasks-stopped \
-      #       --cluster "${{ env.ECS_CLUSTER }}" \
-      #       --tasks "$TASK_ARN"
+          echo "Migration task started: $TASK_ARN"
+          aws ecs wait tasks-stopped \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --tasks "$TASK_ARN"
 
-      #     DESCRIBE=$(aws ecs describe-tasks \
-      #       --cluster "${{ env.ECS_CLUSTER }}" \
-      #       --tasks "$TASK_ARN")
+          DESCRIBE=$(aws ecs describe-tasks \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --tasks "$TASK_ARN")
 
-      #     EXIT_CODE=$(echo "$DESCRIBE" | jq -r '.tasks[0].containers[0].exitCode')
+          EXIT_CODE=$(echo "$DESCRIBE" | jq -r '.tasks[0].containers[0].exitCode')
 
-      #     if [ "$EXIT_CODE" != "0" ]; then
-      #       echo "Alembic migration failed. Check CloudWatch logs."
-      #       exit 1
-      #     fi
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Alembic migration failed. Check CloudWatch logs."
+            exit 1
+          fi
 
-      #     echo "Alembic migration completed successfully."
-
-      # ---------------------------------//-----------------------------------------
+          echo "Alembic migration completed successfully."
 
 
       # 9) Update ECS service to new task definition ARN (this triggers rolling update)

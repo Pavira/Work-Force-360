@@ -1,0 +1,33 @@
+{
+  "family": "workforce360-tdf",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::150916258433:role/ecsTaskExecutionRole",    
+  "taskRoleArn": "arn:aws:iam::150916258433:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "workforce360-container",
+      "image": "REPLACE_IMAGE",
+      "essential": true,
+      "portMappings": [
+        { "containerPort": 8000, "protocol": "tcp" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/workforce360",
+          "awslogs-region": "ap-south-2",
+          "awslogs-stream-prefix": "workforce360"
+        }
+      }
+    }
+  ],
+  "secrets": [
+    {
+      "name": "DATABASE_URL",
+      "valueFrom": "arn:aws:ssm:ap-south-2:150916258433:parameter/workforce360/db_url"
+    }
+  ]
+}

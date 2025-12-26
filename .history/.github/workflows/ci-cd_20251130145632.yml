@@ -14,14 +14,14 @@ env:
   ECS_TASK_FAMILY: ${{ secrets.ECS_TASK_FAMILY }}   # e.g. my-task-family
   CONTAINER_NAME: workforce360-container                                # must match name in ecs-task.json
 
-  # We need id-token for OIDC assume-role and repo contents to build
-permissions:
-  contents: read
-  id-token: write
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
+    # We need id-token for OIDC assume-role and repo contents to build
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       # 1) Checkout repo
@@ -30,11 +30,10 @@ jobs:
 
       # 2) Authenticate to AWS with OIDC and assume role (recommended, no long-lived keys)
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4.1.0
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}   # GitHub secret containing role ARN
           aws-region: ${{ env.AWS_REGION }}
-          # aws-region: ap-south-2
 
       # 3) Login to Amazon ECR 
       - name: Login to Amazon ECR
@@ -66,26 +65,9 @@ jobs:
 
       # 6) Save rendered task definition to file (for registration)
       - name: Write rendered task definition to file
-        id: write_taskdef
         run: |
-          RAW_OUTPUT="${{ steps.render_task.outputs.task-definition }}"
-
-          echo "RAW OUTPUT:"
-          echo "$RAW_OUTPUT"
-
-          # Check if it's a file path
-          if [[ "$RAW_OUTPUT" == /*.json ]]; then
-            echo "It is a file path. Copying file..."
-            cp "$RAW_OUTPUT" rendered-taskdef.json
-          else
-            echo "It is JSON content. Parsing with jq..."
-            echo '${{ steps.render_task.outputs.task-definition }}' | jq '.' > rendered-taskdef.json
-          fi
-
-          echo "Rendered task definition saved:"
-          cat rendered-taskdef.json
-
-
+          echo "${{ steps.render_task.outputs.task-definition }}" > rendered-taskdef.json
+          echo "Rendered task def written to rendered-taskdef.json"
 
       # 7) Register the rendered task definition and capture the ARN
       - name: Register ECS task definition and capture ARN
@@ -104,76 +86,62 @@ jobs:
           echo "Registered TaskDefinition ARN: $TASK_DEF_ARN"
 
       # 8) Run Alembic migrations as a one-off Fargate task (overrides command)
-        #  This step will:
-          #  - start a run-task with the just-registered task definition
-          #  - wait until the task stops
-          #  - check container exit code; fail if migrations failed
-      # master password - Pavithiran2310
-      # master username - postgres
-     
-      # ---------------------------------//-----------------------------------------
+      #    This step will:
+      #      - start a run-task with the just-registered task definition
+      #      - wait until the task stops
+      #      - check container exit code; fail if migrations failed
       # - name: Run Alembic migrations (one-off Fargate task)
       #   env:
-      #     SUBNETS: ${{ secrets.AWS_PRIVATE_SUBNETS }}
-      #     SECURITY_GROUPS: ${{ secrets.AWS_SECURITY_GROUPS }}
+      #     SUBNETS: ${{ secrets.PRIVATE_SUBNETS }         # JSON list "subnet-aaa,subnet-bbb" or comma-separated
+      #     SECURITY_GROUPS: ${{ secrets.SECURITY_GROUPS } # "sg-aaa,sg-bbb"
       #   run: |
       #     set -euo pipefail
 
-      #     echo "Running Alembic migrations using $TASK_DEF_ARN"
+      #     echo "Starting migrations with task definition $TASK_DEF_ARN"
 
+      #     # Run the task overriding the container's command to run alembic
       #     RUN_OUT=$(aws ecs run-task \
-      #       --cluster "${{ env.ECS_CLUSTER }}" \
+      #       --cluster "${{ env.ECS_CLUSTER }" \
       #       --launch-type FARGATE \
       #       --task-definition "$TASK_DEF_ARN" \
       #       --network-configuration "awsvpcConfiguration={subnets=[${SUBNETS}],securityGroups=[${SECURITY_GROUPS}],assignPublicIp=DISABLED}" \
-      #       --overrides '{
-      #         "containerOverrides": [
-      #           {
-      #             "name": "'"${{ env.CONTAINER_NAME }}"'",
-      #             "command": [
-      #               "sh",
-      #               "-c",
-      #               "cd /app && python /app/app/db/init_db.py && alembic upgrade head"
-      #             ]
-      #           }
-      #         ]
-      #       }')
+      #       --overrides '{"containerOverrides":[{"name":"'"${{ env.CONTAINER_NAME }"'","command":["/bin/sh","-c","alembic upgrade head"]}]}' \
+      #       --count 1)
 
-      #     TASK_ARN=$(echo "$RUN_OUT" | jq -r '.tasks[0].taskArn')
+      #     # Extract the started task ARN
+      #     TASK_ARN=$(echo "$RUN_OUT" | jq -r '.tasks[0].taskArn // empty')
 
-      #     if [ -z "$TASK_ARN" ] || [ "$TASK_ARN" = "null" ]; then
-      #       echo "Failed to start migration task"
+      #     if [ -z "$TASK_ARN" ]; then
+      #       echo "Failed to start migration task:"
       #       echo "$RUN_OUT"
       #       exit 1
       #     fi
 
-      #     echo "Migration task started: $TASK_ARN"
-      #     aws ecs wait tasks-stopped \
-      #       --cluster "${{ env.ECS_CLUSTER }}" \
-      #       --tasks "$TASK_ARN"
+      #     echo "Migration task ARN: $TASK_ARN"
 
-      #     DESCRIBE=$(aws ecs describe-tasks \
-      #       --cluster "${{ env.ECS_CLUSTER }}" \
-      #       --tasks "$TASK_ARN")
+      #     # Wait for the task to reach STOPPED
+      #     echo "Waiting for migration task to stop..."
+      #     aws ecs wait tasks-stopped --cluster "${{ env.ECS_CLUSTER }" --tasks "$TASK_ARN"
 
-      #     EXIT_CODE=$(echo "$DESCRIBE" | jq -r '.tasks[0].containers[0].exitCode')
+      #     # Fetch final task description to inspect container exit code / reason
+      #     DESCRIBE=$(aws ecs describe-tasks --cluster "${{ env.ECS_CLUSTER }" --tasks "$TASK_ARN")
+      #     EXIT_CODE=$(echo "$DESCRIBE" | jq -r '.tasks[0].containers[0].exitCode // empty')
+      #     REASON=$(echo "$DESCRIBE" | jq -r '.tasks[0].stoppedReason // empty')
 
-      #     if [ "$EXIT_CODE" != "0" ]; then
-      #       echo "Alembic migration failed. Check CloudWatch logs."
+      #     echo "Migration task stopped. exitCode=$EXIT_CODE stoppedReason=$REASON"
+
+      #     # If exitCode is present and non-zero, fail the job
+      #     if [ -n "$EXIT_CODE" ] && [ "$EXIT_CODE" -ne 0 ]; then
+      #       echo "Migrations failed (exit code: $EXIT_CODE). See logs in CloudWatch."
       #       exit 1
       #     fi
 
-      #     echo "Alembic migration completed successfully."
-
-      # ---------------------------------//-----------------------------------------
-
+      #     echo "Migrations completed successfully."
 
       # 9) Update ECS service to new task definition ARN (this triggers rolling update)
       - name: Update ECS service to use new task definition
         run: |
           echo "Updating ECS service to use $TASK_DEF_ARN"
-          echo "Cluster: ${{ env.ECS_CLUSTER }}"
-          echo "Service: ${{ env.ECS_SERVICE }}"
           aws ecs update-service \
             --cluster "${{ env.ECS_CLUSTER }}" \
             --service "${{ env.ECS_SERVICE }}" \
