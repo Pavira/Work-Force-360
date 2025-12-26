@@ -11,7 +11,7 @@ class Settings(BaseModel):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
     DATABASE_URL: str = (
-        "postgresql://postgres:Pavithiran2310@workforce360-database.c14u8ewuec90.ap-south-2.rds.amazonaws.com:5432/workforce360_db"
+        "postgresql://postgres:Pavithiran2310@workforce360-instance.curgq86s4mqi.us-east-1.rds.amazonaws.com:5432/workforce360_db"
     )
 
 
