@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, Request, status, Depends
 from sqlalchemy.orm import Session
 
 from app.core.firebase_auth import get_current_user
@@ -19,6 +19,7 @@ router = APIRouter()
     "5/minute"
 )  # Allow only 5 requests per minute per IP, ex - requests/minute - 10/second
 async def create_company_profile(
+    request: Request,  # REQUIRED by SlowAPI
     company: CompanyRegistrationSchema,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
