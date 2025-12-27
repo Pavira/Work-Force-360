@@ -22,7 +22,7 @@ async def create_company_profile(
     request: Request,  # REQUIRED by SlowAPI
     company: CompanyRegistrationSchema,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    # current_user: dict = Depends(get_current_user),
 ):
     """
     Create a new company profile (Firebase authenticated) .
