@@ -7,7 +7,7 @@ from fastapi.openapi.utils import get_openapi
 
 import uvicorn
 from app.core.config import settings
-from app.api.v1.routes import auth, job, worker
+from app.api.v1.routes import auth, company, job, worker
 
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
@@ -27,10 +27,10 @@ app = FastAPI(
 )
 
 # Include Routers
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
-app.include_router(worker.router, prefix="/api/v1/worker", tags=["Worker"])
-app.include_router(job.router, prefix="/api/v1/job", tags=["Job"])
-app.include_router(job.router, prefix="/api/v1/company", tags=["Company"])
+# app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
+# app.include_router(worker.router, prefix="/api/v1/worker", tags=["Worker"])
+# app.include_router(job.router, prefix="/api/v1/job", tags=["Job"])
+app.include_router(company.router, prefix="/api/v1/company", tags=["Company"])
 
 # Rate Limiting
 app.state.limiter = limiter
