@@ -14,5 +14,7 @@ class Settings(BaseModel):
         "postgresql://postgres:Pavithiran2310@workforce360-instance.curgq86s4mqi.us-east-1.rds.amazonaws.com:5432/workforce360_db"
     )
 
+    FIREBASE_SERVICE_ACCOUNT_PATH: str = "workforce360_firebase_server_account_key.json"
+
 
 settings = Settings()

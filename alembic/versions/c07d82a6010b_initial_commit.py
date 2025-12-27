@@ -1,8 +1,8 @@
-"""Create workers table
+"""initial commit
 
-Revision ID: 96d08a5c7a15
+Revision ID: c07d82a6010b
 Revises: 
-Create Date: 2025-11-25 19:40:55.788374
+Create Date: 2025-12-26 16:41:59.268333
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '96d08a5c7a15'
+revision: str = 'c07d82a6010b'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

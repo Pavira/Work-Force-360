@@ -9,6 +9,7 @@ from fastapi import APIRouter, status, Path, Depends
 router = APIRouter()
 
 
+# ------------------------# create worker Profile ------------------------
 @router.post("/create_profile", status_code=status.HTTP_201_CREATED)
 async def create_profile(
     worker: WorkerRegistrationSchema, db: Session = Depends(get_db)

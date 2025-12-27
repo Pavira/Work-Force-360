@@ -4,7 +4,7 @@ from app.core.config import settings
 
 DATABASE_URL = (
     settings.DATABASE_URL
-)  # Example: postgresql+psycopg2://user:pass@localhost:5432/dbname
+)  # Example: postgresql+psycopg2://user:pass@ServerEndpoint:5432/dbname
 
 # Sync engine
 engine = create_engine(

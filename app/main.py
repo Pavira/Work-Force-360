@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import List, Optional
+from app.core import limiter
 from app.utils.response import custom_response
 from fastapi import FastAPI, status
 from fastapi.openapi.utils import get_openapi
@@ -7,6 +8,9 @@ from fastapi.openapi.utils import get_openapi
 import uvicorn
 from app.core.config import settings
 from app.api.v1.routes import auth, job, worker
+
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
 
 
 app = FastAPI(
@@ -22,9 +26,14 @@ app = FastAPI(
     ],
 )
 
+# Include Routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(worker.router, prefix="/api/v1/worker", tags=["Worker"])
 app.include_router(job.router, prefix="/api/v1/job", tags=["Job"])
+
+# Rate Limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # Custom OpenAPI Branding
