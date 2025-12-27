@@ -8,23 +8,24 @@ from app.schemas.company_schema import CompanyRegistrationSchema
 # -----------------------Create Company Profile Service----------------------- #
 async def create_company_profile_service(
     company: CompanyRegistrationSchema,
-    firebase_uid: str,
+    # firebase_uid: str,
     db: Session,
 ) -> Company:
     try:
         # Prevent duplicate registration
-        existing = (
-            db.query(Company).filter(Company.firebase_uid == firebase_uid).first()
-        )
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Company already registered",
-            )
+        # existing = (
+        #     db.query(Company).filter(Company.firebase_uid == firebase_uid).first()
+        # )
+        # if existing:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_409_CONFLICT,
+        #         detail="Company already registered",
+        #     )
 
         with db.begin():
             company_db = Company(
-                firebase_uid=firebase_uid,
+                # firebase_uid=firebase_uid,
+                firebase_uid="firebase_uid",
                 company_name=company.companyName,
                 industry=company.industry,
                 gst_number=company.gst,

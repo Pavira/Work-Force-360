@@ -30,7 +30,7 @@ async def create_company_profile(
     try:
         company_db = await create_company_profile_service(
             company=company,
-            firebase_uid=current_user["uid"],
+            # firebase_uid=current_user["uid"],
             db=db,
         )
 
