@@ -30,6 +30,7 @@ app = FastAPI(
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(worker.router, prefix="/api/v1/worker", tags=["Worker"])
 app.include_router(job.router, prefix="/api/v1/job", tags=["Job"])
+app.include_router(job.router, prefix="/api/v1/company", tags=["Company"])
 
 # Rate Limiting
 app.state.limiter = limiter
