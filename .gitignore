@@ -14,3 +14,5 @@ wheels/
 frontend
 
 .github
+
+workforce360_firebase_server_account_key.json

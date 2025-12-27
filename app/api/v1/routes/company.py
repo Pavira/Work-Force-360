@@ -12,10 +12,12 @@ router = APIRouter()
 
 
 @router.post(
-    "/company",
+    "/create_company_profile",
     status_code=status.HTTP_201_CREATED,
 )
-@limiter.limit("5/minute")
+@limiter.limit(
+    "5/minute"
+)  # Allow only 5 requests per minute per IP, ex - requests/minute - 10/second
 async def create_company_profile(
     company: CompanyRegistrationSchema,
     db: Session = Depends(get_db),

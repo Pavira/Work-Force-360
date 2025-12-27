@@ -12,7 +12,8 @@ from app.db.base import Base
 class Company(Base):
     __tablename__ = "companies"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    firebase_uid = Column(String, unique=True, nullable=False, index=True)
 
     company_name = Column(String, nullable=False)
     industry = Column(String, nullable=False)

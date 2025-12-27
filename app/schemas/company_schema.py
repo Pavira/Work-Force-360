@@ -16,7 +16,7 @@ class CompanyDocumentCreate(BaseModel):
     documentUrl: str
 
 
-class CompanyCreate(BaseModel):
+class CompanyRegistrationSchema(BaseModel):
     companyName: str
     industry: str
     gst: Optional[str]
