@@ -24,7 +24,7 @@ async def create_company_profile(
     current_user: dict = Depends(get_current_user),
 ):
     """
-    Create a new company profile (Firebase authenticated).
+    Create a new company profile (Firebase authenticated) .
     """
     try:
         company_db = await create_company_profile_service(
