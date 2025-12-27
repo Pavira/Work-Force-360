@@ -22,6 +22,7 @@ class CompanyRegistrationSchema(BaseModel):
     gst: Optional[str]
 
     contactPersonName: str
+    phone: str
     email: str
     phone: str
 

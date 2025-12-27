@@ -20,6 +20,7 @@ class Company(Base):
     gst_number = Column(String, nullable=True)
 
     contact_person_name = Column(String, nullable=False)
+    phone = Column(String, nullable=False)
     email = Column(String, nullable=False)
     phone = Column(String, nullable=False)
 
