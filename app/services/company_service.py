@@ -25,7 +25,7 @@ async def create_company_profile_service(
         with db.begin():
             company_db = Company(
                 firebase_uid=firebase_uid,
-                firebase_uid="firebase_uid",
+                # firebase_uid="firebase_uid",
                 company_name=company.companyName,
                 industry=company.industry,
                 gst_number=company.gst,
