@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from app.models.company_model import Company, CompanyAddress, CompanyDocument
+from app.models.company_models import Company, CompanyAddress, CompanyDocument
 from app.schemas.company_schema import CompanyRegistrationSchema
 
 
@@ -63,7 +63,7 @@ async def create_company_profile_service(
     except HTTPException:
         raise
     except Exception:
-        db.rollback()
+        # db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database transaction failed",

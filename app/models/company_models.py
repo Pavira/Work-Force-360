@@ -21,13 +21,15 @@ class Company(Base):
 
     contact_person_name = Column(String, nullable=False)
     phone = Column(String, nullable=False)
-    email = Column(String, nullable=False)
+    email = Column(String, unique=True, nullable=False)
     phone = Column(String, nullable=False)
 
     logo_url = Column(Text, nullable=True)
 
     status = Column(String, default="pending")
     is_verified = Column(Boolean, default=False)
+
+    is_active = Column(Boolean, default=True)
 
     addresses = relationship(
         "CompanyAddress", back_populates="company", cascade="all, delete-orphan"
