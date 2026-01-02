@@ -9,7 +9,8 @@ DATABASE_URL = (
 # Sync engine
 engine = create_engine(
     DATABASE_URL,
-    echo=True,  # Enable SQL query logs during development
+    # echo=True,  # Enable SQL query logs during development
+    echo="debug",  # Enable detailed SQL query logs
     future=True,  # Enables SQLAlchemy 2.0 API behavior
 )
 
