@@ -60,7 +60,7 @@ async def create_company_profile_service(
     except HTTPException:
         raise
     except Exception as e:
-        # print("DB ERROR 👉", e)  # or logger.exception(e)
+        print("DB ERROR 👉", e)  # or logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database transaction failed",
