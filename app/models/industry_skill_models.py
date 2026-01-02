@@ -1,5 +1,13 @@
 from uuid import uuid4
-from sqlalchemy import Column, ForeignKey, String, Boolean, DateTime, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    String,
+    Boolean,
+    DateTime,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.db.base import Base
@@ -8,11 +16,13 @@ from app.db.base import Base
 class IndustryTypeModel(Base):
     __tablename__ = "industry_types"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
     name = Column(String(150), nullable=False, unique=True)
     description = Column(String(255), nullable=True)
 
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, server_default=text("true"))
     # is_deleted = Column(Boolean, default=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -24,7 +34,9 @@ class IndustryTypeModel(Base):
 class CategorySkillModel(Base):
     __tablename__ = "category_skills"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
     industry_type_id = Column(
         UUID(as_uuid=True),
         ForeignKey("industry_types.id", ondelete="RESTRICT"),
@@ -34,7 +46,7 @@ class CategorySkillModel(Base):
     name = Column(String(150), nullable=False)
     # description = Column(String(255), nullable=True)
 
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, server_default=text("true"))
     # is_deleted = Column(Boolean, default=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -53,7 +65,9 @@ class CategorySkillModel(Base):
 class SubCategorySkillModel(Base):
     __tablename__ = "sub_category_skills"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
     category_skill_id = Column(
         UUID(as_uuid=True),
         ForeignKey("category_skills.id", ondelete="RESTRICT"),
@@ -63,10 +77,12 @@ class SubCategorySkillModel(Base):
     name = Column(String(150), nullable=False)
     description = Column(String(255), nullable=True)
 
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, server_default=text("true"))
     # is_deleted = Column(Boolean, default=False)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

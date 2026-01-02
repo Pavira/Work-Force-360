@@ -9,6 +9,8 @@ import uvicorn
 from app.core.config import settings
 from app.api.v1.routes import auth, company, job, worker
 
+# from app.utils.middlewares import LoggingMiddleware, AuthMiddleware
+
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
@@ -25,6 +27,10 @@ app = FastAPI(
         {"name": "Job", "description": "Job posting and management endpoints"},
     ],
 )
+
+# ---------- Middleware ----------
+# app.add_middleware(LoggingMiddleware)
+# app.add_middleware(AuthMiddleware)
 
 # Include Routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])

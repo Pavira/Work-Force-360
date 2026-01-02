@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, String, Boolean, Text, func
+from sqlalchemy import Column, ForeignKey, String, Boolean, Text, func, text
 
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -12,7 +12,9 @@ from app.db.base import Base
 class Company(Base):
     __tablename__ = "companies"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
     firebase_uid = Column(String, unique=True, nullable=False, index=True)
 
     company_name = Column(String, nullable=False)
@@ -29,7 +31,7 @@ class Company(Base):
     status = Column(String, default="pending")
     is_verified = Column(Boolean, default=False)
 
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, server_default=text("true"))
 
     addresses = relationship(
         "CompanyAddress", back_populates="company", cascade="all, delete-orphan"
@@ -47,7 +49,9 @@ class Company(Base):
 class CompanyAddress(Base):
     __tablename__ = "company_addresses"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
     company_id = Column(
         UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True
     )
@@ -66,7 +70,9 @@ class CompanyAddress(Base):
 class CompanyDocument(Base):
     __tablename__ = "company_documents"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
     company_id = Column(
         UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True
     )
