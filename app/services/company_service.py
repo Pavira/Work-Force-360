@@ -22,48 +22,45 @@ async def create_company_profile_service(
                 detail="Company already registered",
             )
 
-        with db.begin():
-            company_db = Company(
-                firebase_uid=firebase_uid,
-                # firebase_uid="firebase_uid",
-                company_name=company.companyName,
-                industry=company.industry,
-                gst_number=company.gst,
-                contact_person_name=company.contactPersonName,
-                email=company.email,
-                phone=company.phone,
-                logo_url=company.logoUrl,
+        company_db = Company(
+            firebase_uid=firebase_uid,
+            # firebase_uid="firebase_uid",
+            company_name=company.companyName,
+            industry=company.industry,
+            gst_number=company.gst,
+            contact_person_name=company.contactPersonName,
+            email=company.email,
+            phone=company.phone,
+            logo_url=company.logoUrl,
+        )
+        db.add(company_db)
+        db.flush()  # ensures company_db.id exists
+        for addr in company.addresses:
+            db.add(
+                CompanyAddress(
+                    company_id=company_db.id,
+                    address=addr.address,
+                    unit_name=addr.unitName,
+                    city=addr.city,
+                    state=addr.state,
+                    pincode=addr.pincode,
+                )
             )
-            db.add(company_db)
-            db.flush()  # ensures company_db.id exists
-
-            for addr in company.addresses:
-                db.add(
-                    CompanyAddress(
-                        company_id=company_db.id,
-                        address=addr.address,
-                        unit_name=addr.unitName,
-                        city=addr.city,
-                        state=addr.state,
-                        pincode=addr.pincode,
-                    )
+        for doc in company.documents:
+            db.add(
+                CompanyDocument(
+                    company_id=company_db.id,
+                    document_type=doc.documentType,
+                    document_url=doc.documentUrl,
                 )
-
-            for doc in company.documents:
-                db.add(
-                    CompanyDocument(
-                        company_id=company_db.id,
-                        document_type=doc.documentType,
-                        document_url=doc.documentUrl,
-                    )
-                )
+            )
 
         return company_db
 
     except HTTPException:
         raise
     except Exception as e:
-        print("DB ERROR 👉", e)  # or logger.exception(e)
+        # print("DB ERROR 👉", e)  # or logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database transaction failed",
