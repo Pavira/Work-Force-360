@@ -27,28 +27,19 @@ async def create_company_profile(
     """
     Create a new company profile (Firebase authenticated) .
     """
-    try:
-        company_db = await create_company_profile_service(
-            company=company,
-            firebase_uid=current_user["uid"],
-            db=db,
-        )
+    company_db = await create_company_profile_service(
+        company=company,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
 
-        return custom_response(
-            success=True,
-            message="Company created successfully",
-            data={
-                "id": company_db.id,
-                "company_name": company_db.company_name,
-                "status": company_db.status,
-            },
-            code=status.HTTP_201_CREATED,
-        )
-
-    except Exception as e:
-        return custom_response(
-            success=False,
-            message="Failed to create company",
-            data={"error": str(e)},
-            code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+    return custom_response(
+        success=True,
+        message="Company created successfully",
+        data={
+            "id": company_db.id,
+            "company_name": company_db.company_name,
+            "status": company_db.status,
+        },
+        code=status.HTTP_201_CREATED,
+    )
