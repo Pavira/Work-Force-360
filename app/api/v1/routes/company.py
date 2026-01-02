@@ -58,15 +58,13 @@ async def create_company_profile(
 @limiter.limit("10/minute")
 async def get_company_profile(
     request: Request,  # REQUIRED by SlowAPI
-    current_user: dict = Depends(get_current_user),
+    current_user: str = id,
     db: Session = Depends(get_db),
 ):
     """
     Get company profile (Firebase authenticated).
     """
-    company_db = (
-        db.query(Company).filter(Company.firebase_uid == current_user["uid"]).first()
-    )
+    company_db = db.query(Company).filter(Company.id == current_user).first()
 
     return custom_response(
         success=True,
