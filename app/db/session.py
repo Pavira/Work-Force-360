@@ -19,11 +19,12 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def get_db():
-    """
-    Database dependency for Sync FastAPI routes.
-    """
     db = SessionLocal()
     try:
         yield db
+        db.commit()  # ✅ THIS WAS MISSING
+    except:
+        db.rollback()  # ✅ Safety
+        raise
     finally:
         db.close()
