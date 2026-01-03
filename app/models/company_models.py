@@ -24,7 +24,6 @@ class CompanyModel(Base):
     contact_person_name = Column(String, nullable=False)
     phone = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
-    phone = Column(String, nullable=False)
 
     logo_url = Column(Text, nullable=True)
 
