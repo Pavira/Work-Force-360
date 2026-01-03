@@ -10,7 +10,7 @@ from app.schemas.company_schema import CompanyRegistrationSchema
 
 
 # -----------------------Create Company Profile Service----------------------- #
-async def create_company_profile_service(
+def create_company_profile_service(
     company: CompanyRegistrationSchema,
     firebase_uid: str,
     db: Session,

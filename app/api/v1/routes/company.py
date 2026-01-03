@@ -23,7 +23,7 @@ router = APIRouter()
 @limiter.limit(
     "5/minute"
 )  # Allow only 5 requests per minute per IP, ex - requests/minute - 10/second
-async def create_company_profile(
+def create_company_profile(
     request: Request,  # REQUIRED by SlowAPI
     company: CompanyRegistrationSchema,
     db: Session = Depends(get_db),
@@ -32,7 +32,7 @@ async def create_company_profile(
     """
     Create a new company profile (Firebase authenticated) .
     """
-    company_db = await create_company_profile_service(
+    company_db = create_company_profile_service(
         company=company,
         firebase_uid=current_user["uid"],
         db=db,
@@ -59,7 +59,7 @@ async def create_company_profile(
     status_code=status.HTTP_200_OK,
 )
 @limiter.limit("10/minute")
-async def get_company_profile(
+def get_company_profile(
     request: Request,  # REQUIRED by SlowAPI
     current_user: str = id,
     db: Session = Depends(get_db),

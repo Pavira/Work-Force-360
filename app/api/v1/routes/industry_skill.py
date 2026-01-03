@@ -19,7 +19,7 @@ router = APIRouter()
 @limiter.limit(
     "15/minute"
 )  # Allow only 5 requests per minute per IP, ex - requests/minute - 10/second
-async def get_industry_types(
+def get_industry_types(
     request: Request,  # REQUIRED by SlowAPI
     db: Session = Depends(get_db),
     # current_user: dict = Depends(get_current_user),
@@ -27,7 +27,7 @@ async def get_industry_types(
     """
     Get list of industry types.
     """
-    industry_types = await get_industry_types_service(db=db)
+    industry_types = get_industry_types_service(db=db)
     return custom_response(
         success=True,
         message="Industry types fetched successfully",
