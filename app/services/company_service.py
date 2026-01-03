@@ -84,13 +84,13 @@ def create_company_profile_service(
 
 # -----------------------Get Company Profile Service ----------------------- #
 def get_company_profile_service(
-    current_user: str,
+    firebase_uid: str,
     db: Session,
 ) -> CompanyModel:
     try:
         company_profile = (
             db.query(CompanyModel)
-            .filter(CompanyModel.firebase_uid == current_user)
+            .filter(CompanyModel.firebase_uid == firebase_uid)
             .first()
         )
         if not company_profile:
