@@ -21,11 +21,11 @@ app = FastAPI(
     # description=settings.DESCRIPTION,
     # contact={"name": "Pavi", "email": "pavi@company.com"},
     # license_info={"name": "MIT"},
-    openapi_tags=[
-        {"name": "Auth", "description": "User authentication using JWT tokens"},
-        {"name": "Worker", "description": "Worker management endpoints"},
-        {"name": "Job", "description": "Job posting and management endpoints"},
-    ],
+    # openapi_tags=[
+    #     {"name": "Auth", "description": "User authentication using JWT tokens"},
+    #     {"name": "Worker", "description": "Worker management endpoints"},
+    #     {"name": "Job", "description": "Job posting and management endpoints"},
+    # ],
 )
 
 # ---------- Middleware ----------

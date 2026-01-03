@@ -34,10 +34,10 @@ class CompanyModel(Base):
     is_active = Column(Boolean, server_default=text("true"))
 
     addresses = relationship(
-        "CompanyAddress", back_populates="company", cascade="all, delete-orphan"
+        "CompanyAddressModel", back_populates="company", cascade="all, delete-orphan"
     )
     documents = relationship(
-        "CompanyDocument", back_populates="company", cascade="all, delete-orphan"
+        "CompanyDocumentModel", back_populates="company", cascade="all, delete-orphan"
     )
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
