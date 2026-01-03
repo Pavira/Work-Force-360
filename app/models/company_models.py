@@ -9,7 +9,7 @@ from sqlalchemy import DateTime
 from app.db.base import Base
 
 
-class Company(Base):
+class CompanyModel(Base):
     __tablename__ = "companies"
 
     id = Column(
@@ -46,7 +46,7 @@ class Company(Base):
     )
 
 
-class CompanyAddress(Base):
+class CompanyAddressModel(Base):
     __tablename__ = "company_addresses"
 
     id = Column(
@@ -67,7 +67,7 @@ class CompanyAddress(Base):
     company = relationship("Company", back_populates="addresses")
 
 
-class CompanyDocument(Base):
+class CompanyDocumentModel(Base):
     __tablename__ = "company_documents"
 
     id = Column(

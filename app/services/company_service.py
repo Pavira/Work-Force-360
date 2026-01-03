@@ -1,7 +1,11 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from app.models.company_models import Company, CompanyAddress, CompanyDocument
+from app.models.company_models import (
+    CompanyModel,
+    CompanyAddressModel,
+    CompanyDocumentModel,
+)
 from app.schemas.company_schema import CompanyRegistrationSchema
 
 
@@ -10,19 +14,30 @@ async def create_company_profile_service(
     company: CompanyRegistrationSchema,
     firebase_uid: str,
     db: Session,
-) -> Company:
+) -> CompanyModel:
     try:
-        # Prevent duplicate registration
+        # Validation 1 - Prevent duplicate registration for same firebase_uid
         existing = (
-            db.query(Company).filter(Company.firebase_uid == firebase_uid).first()
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == firebase_uid)
+            .first()
         )
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Company already registered",
             )
+        # Validation 2 - Prevent duplicate registration for same email
+        existing_emal = (
+            db.query(CompanyModel).filter(CompanyModel.email == company.email).first()
+        )
+        if existing_emal:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already registered with another company",
+            )
 
-        company_db = Company(
+        company_db = CompanyModel(
             firebase_uid=firebase_uid,
             # firebase_uid="firebase_uid",
             company_name=company.companyName,
@@ -37,7 +52,7 @@ async def create_company_profile_service(
         db.flush()  # ensures company_db.id exists
         for addr in company.addresses:
             db.add(
-                CompanyAddress(
+                CompanyAddressModel(
                     company_id=company_db.id,
                     address=addr.address,
                     unit_name=addr.unitName,
@@ -48,7 +63,7 @@ async def create_company_profile_service(
             )
         for doc in company.documents:
             db.add(
-                CompanyDocument(
+                CompanyDocumentModel(
                     company_id=company_db.id,
                     document_type=doc.documentType,
                     document_url=doc.documentUrl,

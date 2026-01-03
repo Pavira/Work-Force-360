@@ -3,7 +3,7 @@ from uuid import UUID
 from typing import List, Optional
 
 
-class CompanyAddressCreate(BaseModel):
+class CompanyAddressCreateSchema(BaseModel):
     address: str
     unitName: Optional[str]
     city: str
@@ -11,7 +11,7 @@ class CompanyAddressCreate(BaseModel):
     pincode: str
 
 
-class CompanyDocumentCreate(BaseModel):
+class CompanyDocumentCreateSchema(BaseModel):
     documentType: str
     documentUrl: str
 
@@ -28,5 +28,5 @@ class CompanyRegistrationSchema(BaseModel):
 
     logoUrl: Optional[str]
 
-    addresses: List[CompanyAddressCreate]
-    documents: List[CompanyDocumentCreate]
+    addresses: List[CompanyAddressCreateSchema]
+    documents: List[CompanyDocumentCreateSchema]
