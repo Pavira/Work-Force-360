@@ -64,7 +64,7 @@ class CompanyAddressModel(Base):
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
-    company = relationship("Company", back_populates="addresses")
+    company = relationship("CompanyModel", back_populates="addresses")
 
 
 class CompanyDocumentModel(Base):
@@ -82,4 +82,4 @@ class CompanyDocumentModel(Base):
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
-    company = relationship("Company", back_populates="documents")
+    company = relationship("CompanyModel", back_populates="documents")
