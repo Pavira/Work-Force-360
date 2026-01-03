@@ -1,13 +1,16 @@
 from fastapi import APIRouter, Request, status, Depends
 from sqlalchemy.orm import Session
-
 from app.core.firebase_auth import get_current_user
 from app.db.session import get_db
-from app.models.company_models import Company
+from app.core.limiter import limiter
+
 from app.utils.response import custom_response
 from app.schemas.company_schema import CompanyRegistrationSchema
-from app.services.company_service import create_company_profile_service
-from app.core.limiter import limiter
+from app.services.company_service import (
+    create_company_profile_service,
+    get_company_profile_service,
+)
+
 
 router = APIRouter()
 
@@ -50,7 +53,7 @@ async def create_company_profile(
 # -----------------------End Create Company Profile----------------------- #
 
 
-# -----------------------Get Company Profile----------------------- #
+# -----------------------Get Company Profile Route----------------------- #
 @router.get(
     "/get_company_profile",
     status_code=status.HTTP_200_OK,
@@ -64,26 +67,13 @@ async def get_company_profile(
     """
     Get company profile (Firebase authenticated).
     """
-    company_db = db.query(Company).filter(Company.id == current_user).first()
+    company_details = get_company_profile_service(
+        firebase_uid=current_user["uid"], db=db
+    )
 
     return custom_response(
         success=True,
         message="Company profile fetched successfully",
-        data={
-            # Show full model data
-            "id": company_db.id,
-            "firebase_uid": company_db.firebase_uid,
-            "company_name": company_db.company_name,
-            "industry": company_db.industry,
-            "gst_number": company_db.gst_number,
-            "contact_person_name": company_db.contact_person_name,
-            "phone": company_db.phone,
-            "email": company_db.email,
-            "logo_url": company_db.logo_url,
-            "status": company_db.status,
-            "is_verified": company_db.is_verified,
-            "is_active": company_db.is_active,
-            "created_at": company_db.created_at,
-        },
+        data=company_details,
         code=status.HTTP_200_OK,
     )

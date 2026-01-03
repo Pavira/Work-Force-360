@@ -7,7 +7,7 @@ from fastapi.openapi.utils import get_openapi
 
 import uvicorn
 from app.core.config import settings
-from app.api.v1.routes import auth, company, job, worker
+from app.api.v1.routes import auth, company, industry_skill, job, worker
 
 # from app.utils.middlewares import LoggingMiddleware, AuthMiddleware
 
@@ -33,10 +33,13 @@ app = FastAPI(
 # app.add_middleware(AuthMiddleware)
 
 # Include Routers
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
-app.include_router(worker.router, prefix="/api/v1/worker", tags=["Worker"])
-app.include_router(job.router, prefix="/api/v1/job", tags=["Job"])
+# app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
+# app.include_router(worker.router, prefix="/api/v1/worker", tags=["Worker"])
+# app.include_router(job.router, prefix="/api/v1/job", tags=["Job"])
 app.include_router(company.router, prefix="/api/v1/company", tags=["Company"])
+app.include_router(
+    industry_skill.router, prefix="/api/v1/industry_skill", tags=["Industry & Skill"]
+)
 
 # Rate Limiting
 app.state.limiter = limiter

@@ -20,7 +20,7 @@ class IndustryTypeModel(Base):
         UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
     )
     name = Column(String(150), nullable=False, unique=True)
-    description = Column(String(255), nullable=True)
+    # description = Column(String(255), nullable=True)
 
     is_active = Column(Boolean, server_default=text("true"))
     # is_deleted = Column(Boolean, default=False)
@@ -75,7 +75,7 @@ class SubCategorySkillModel(Base):
     )
 
     name = Column(String(150), nullable=False)
-    description = Column(String(255), nullable=True)
+    # description = Column(String(255), nullable=True)
 
     is_active = Column(Boolean, server_default=text("true"))
     # is_deleted = Column(Boolean, default=False)

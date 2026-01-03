@@ -80,3 +80,30 @@ async def create_company_profile_service(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database transaction failed",
         )
+
+
+# -----------------------Get Company Profile Service ----------------------- #
+def get_company_profile_service(
+    current_user: str,
+    db: Session,
+) -> CompanyModel:
+    try:
+        company_profile = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == current_user)
+            .first()
+        )
+        if not company_profile:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+        return company_profile
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching company profile",
+        )
