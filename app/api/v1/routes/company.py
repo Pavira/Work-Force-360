@@ -61,7 +61,7 @@ def create_company_profile(
 @limiter.limit("10/minute")
 def get_company_profile(
     request: Request,  # REQUIRED by SlowAPI
-    current_user: str = id,
+    current_user: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
