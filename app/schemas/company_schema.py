@@ -16,14 +16,20 @@ class CompanyDocumentCreateSchema(BaseModel):
     documentUrl: Optional[str]
 
 
+class ContactInfoSchema(BaseModel):
+    contactPersonName: Optional[str]
+    contactPersonPhone: Optional[str]
+    contactEmail: Optional[str]
+
+
+class DocumentInfoSchema(BaseModel):
+    logoUrl: Optional[str]
+    documents: List[CompanyDocumentCreateSchema]
+
+
 class CompanyInfoSchema(BaseModel):
     companyName: str
     industryType: str
     gstNo: Optional[str]
     addresses: List[CompanyAddressCreateSchema]
     authPhone: str
-    contactPersonName: Optional[str]
-    contactPersonPhone: Optional[str]
-    contactEmail: Optional[str]
-    logoUrl: Optional[str]
-    documents: List[CompanyDocumentCreateSchema]

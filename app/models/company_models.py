@@ -2,7 +2,6 @@ from sqlalchemy import Column, ForeignKey, String, Boolean, Text, func, text
 
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from uuid import uuid4
 from sqlalchemy import DateTime
 
 
@@ -29,7 +28,7 @@ class CompanyModel(Base):
 
     logo_url = Column(Text, nullable=True)
 
-    status = Column(String, default="pending")
+    status = Column(String, default="draft")
     is_verified = Column(Boolean, default=False)
 
     is_active = Column(Boolean, server_default=text("true"))
