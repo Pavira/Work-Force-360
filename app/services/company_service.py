@@ -195,94 +195,107 @@ def update_company_profile_service(
     firebase_uid: str,
     db: Session,
 ) -> CompanyModel:
-    company = (
-        db.query(CompanyModel).filter(CompanyModel.firebase_uid == firebase_uid).first()
-    )
+    try:
 
-    if not company:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Company profile not found",
+        company = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == firebase_uid)
+            .first()
         )
 
-    data = update.model_dump(exclude_unset=True)
-
-    # Simple field updates
-    if "companyName" in data:
-        company.company_name = data["companyName"]
-
-    if "industryType" in data:
-        company.industry = data["industryType"]
-
-    if "gstNo" in data:
-        company.gst_number = data["gstNo"]
-
-    # Address update (replace strategy)
-    if "addresses" in data:
-        db.query(CompanyAddressModel).filter(
-            CompanyAddressModel.company_id == company.id
-        ).delete(synchronize_session=False)
-
-        for addr in data["addresses"]:
-            db.add(
-                CompanyAddressModel(
-                    company_id=company.id,
-                    address=addr["address"],
-                    unit_name=addr["unitName"],
-                    city=addr["city"],
-                    state=addr["state"],
-                    pincode=addr["pincode"],
-                )
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
             )
-    # Contact Info update
-    if "contactInfo" in data:
-        ci = data["contactInfo"]
 
-        if "contactPersonName" in ci:
-            company.contact_person_name = ci["contactPersonName"]
+        data = update.model_dump(exclude_unset=True)
 
-        if "contactPersonPhone" in ci:
-            company.contact_phone = ci["contactPersonPhone"]
+        # Simple field updates
+        if "companyName" in data:
+            company.company_name = data["companyName"]
 
-        if "contactEmail" in ci:
-            exists = (
-                db.query(CompanyModel)
-                .filter(
-                    CompanyModel.contact_email == ci["contactEmail"],
-                    CompanyModel.id != company.id,
-                )
-                .first()
-            )
-            if exists:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Email already registered with another company",
-                )
-            company.contact_email = ci["contactEmail"]
+        if "industryType" in data:
+            company.industry = data["industryType"]
 
-    # Document Info update
-    if "documentInfo" in data:
-        di = data["documentInfo"]
+        if "gstNo" in data:
+            company.gst_number = data["gstNo"]
 
-        if "logoUrl" in di:
-            company.logo_url = di["logoUrl"]
-
-        if "documents" in di:
-            db.query(CompanyDocumentModel).filter(
-                CompanyDocumentModel.company_id == company.id
+        # Address update (replace strategy)
+        if "addresses" in data:
+            db.query(CompanyAddressModel).filter(
+                CompanyAddressModel.company_id == company.id
             ).delete(synchronize_session=False)
 
-            for doc in di["documents"]:
+            for addr in data["addresses"]:
                 db.add(
-                    CompanyDocumentModel(
+                    CompanyAddressModel(
                         company_id=company.id,
-                        document_type=doc.get("documentType"),
-                        document_url=doc.get("documentUrl"),
+                        address=addr["address"],
+                        unit_name=addr["unitName"],
+                        city=addr["city"],
+                        state=addr["state"],
+                        pincode=addr["pincode"],
                     )
                 )
+        # Contact Info update
+        if "contactInfo" in data:
+            ci = data["contactInfo"]
 
-    db.flush()
-    return company
+            if "contactPersonName" in ci:
+                company.contact_person_name = ci["contactPersonName"]
+
+            if "contactPersonPhone" in ci:
+                company.contact_phone = ci["contactPersonPhone"]
+
+            if "contactEmail" in ci:
+                exists = (
+                    db.query(CompanyModel)
+                    .filter(
+                        CompanyModel.contact_email == ci["contactEmail"],
+                        CompanyModel.id != company.id,
+                    )
+                    .first()
+                )
+                if exists:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="Email already registered with another company",
+                    )
+                company.contact_email = ci["contactEmail"]
+
+        # Document Info update
+        if "documentInfo" in data:
+            di = data["documentInfo"]
+
+            if "logoUrl" in di:
+                company.logo_url = di["logoUrl"]
+
+            if "documents" in di:
+                db.query(CompanyDocumentModel).filter(
+                    CompanyDocumentModel.company_id == company.id
+                ).delete(synchronize_session=False)
+
+                for doc in di["documents"]:
+                    db.add(
+                        CompanyDocumentModel(
+                            company_id=company.id,
+                            document_type=doc.get("documentType"),
+                            document_url=doc.get("documentUrl"),
+                        )
+                    )
+
+        db.flush()
+        return company
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating contact info",
+        )
 
 
 # -----------------------End Update Company Profile Service----------------------- #

@@ -14,6 +14,7 @@ from app.schemas.company_schema import (
 from app.services.company_service import (
     create_company_profile_service,
     get_company_profile_service,
+    update_company_profile_service,
     update_contact_info_service,
     update_document_info_service,
 )
@@ -218,7 +219,7 @@ def update_company_profile(
     """
     Update company profile (Firebase authenticated) .
     """
-    company_db = create_company_profile_service(
+    company_db = update_company_profile_service(
         company=update,
         firebase_uid=current_user["uid"],
         db=db,
