@@ -45,6 +45,7 @@ def create_company_profile_service(
             company_name=company.companyName,
             industry=company.industryType,
             gst_number=company.gstNo,
+            auth_phone=company.authPhone,
             contact_person_name=company.contactPersonName,
             email=company.contactEmail,
             phone=company.contactPersonPhone,

@@ -21,7 +21,7 @@ class CompanyModel(Base):
     industry = Column(String, nullable=False)
     gst_number = Column(String, nullable=True)
 
-    auth_phone = Column(String, unique=True, nullable=False)
+    auth_phone = Column(String, nullable=False)
 
     contact_person_name = Column(String, nullable=True)
     contact_phone = Column(String, nullable=True)
