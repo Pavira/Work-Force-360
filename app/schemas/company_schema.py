@@ -33,3 +33,12 @@ class CompanyInfoSchema(BaseModel):
     gstNo: Optional[str]
     addresses: List[CompanyAddressCreateSchema]
     authPhone: str
+
+
+class CompanyProfileUpdateSchema(BaseModel):
+    companyName: Optional[str]
+    industryType: Optional[str]
+    gstNo: Optional[str]
+    addresses: Optional[List[CompanyAddressCreateSchema]]
+    contactInfo: Optional[ContactInfoSchema]
+    documentInfo: Optional[DocumentInfoSchema]

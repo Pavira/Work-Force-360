@@ -7,6 +7,7 @@ from app.core.limiter import limiter
 from app.utils.response import custom_response
 from app.schemas.company_schema import (
     CompanyInfoSchema,
+    CompanyProfileUpdateSchema,
     ContactInfoSchema,
     DocumentInfoSchema,
 )
@@ -96,6 +97,8 @@ def create_company_profile(
 
 
 # -----------------------End Create Company Profile----------------------- #
+
+
 # -----------------------Update Contact Person Info----------------------- #
 @router.patch(
     "/update_contact_info",
@@ -196,3 +199,41 @@ def get_company_profile(
         data=company_details,
         code=status.HTTP_200_OK,
     )
+
+
+# -----------------------End Get Company Profile Route----------------------- #
+
+
+# -----------------------Update Company Profile Route----------------------- #
+@router.put(
+    "/update_company_profile",
+    status_code=status.HTTP_201_CREATED,
+)
+def update_company_profile(
+    request: Request,  # REQUIRED by SlowAPI
+    company_info: CompanyProfileUpdateSchema,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Update company profile (Firebase authenticated) .
+    """
+    company_db = create_company_profile_service(
+        company=company_info,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Company profile updated successfully",
+        data={
+            "id": company_db.id,
+            "company_name": company_db.company_name,
+            "status": company_db.status,
+        },
+        code=status.HTTP_201_CREATED,
+    )
+
+
+# -----------------------End Update Company Profile Service----------------------- #

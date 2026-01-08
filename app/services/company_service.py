@@ -34,6 +34,9 @@ def get_company_profile_service(
         )
 
 
+# -----------------------End Get Company Profile Service ----------------------- #
+
+
 # -----------------------Create Company Profile Service----------------------- #
 def create_company_profile_service(
     company: CompanyInfoSchema,
@@ -81,7 +84,10 @@ def create_company_profile_service(
         )
 
 
-# -----------------------Update Company Profile Service----------------------- #
+# -----------------------End Create Company Profile Service----------------------- #
+
+
+# -----------------------Update Contact Info Service----------------------- #
 def update_contact_info_service(
     contact_info: ContactInfoSchema,
     firebase_uid: str,
@@ -133,6 +139,9 @@ def update_contact_info_service(
         )
 
 
+# -----------------------End Update Contact Info Service----------------------- #
+
+
 # -----------------------Update Document Service----------------------- #
 def update_document_info_service(
     contact_info: DocumentInfoSchema,
@@ -174,3 +183,66 @@ def update_document_info_service(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error updating contact info",
         )
+
+
+# -----------------------End Update Document Service----------------------- #
+
+
+# -----------------------Update Company Profile Service----------------------- #
+def update_company_profile_service(
+    company: CompanyInfoSchema,
+    firebase_uid: str,
+    db: Session,
+) -> CompanyModel:
+    try:
+        company_profile = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not company_profile:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
+        # Update fields
+        company_profile.company_name = company.companyName
+        company_profile.industry = company.industryType
+        company_profile.gst_number = company.gstNo
+
+        # Update addresses
+        if company.addresses:
+            # Clear existing addresses
+            db.query(CompanyAddressModel).filter(
+                CompanyAddressModel.company_id == company_profile.id
+            ).delete()
+
+            for addr in company.addresses:
+                db.add(
+                    CompanyAddressModel(
+                        company_id=company_profile.id,
+                        address=addr.address,
+                        unit_name=addr.unitName,
+                        city=addr.city,
+                        state=addr.state,
+                        pincode=addr.pincode,
+                    )
+                )
+
+        db.add(company_profile)
+        db.flush()
+        return company_profile
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating company profile",
+        )
+
+
+# -----------------------End Update Company Profile Service----------------------- #
