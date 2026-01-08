@@ -114,7 +114,7 @@ def update_contact_info(
     Update contact person info for company profile (Firebase authenticated) .
     """
     company_db = update_contact_info_service(
-        company=company,
+        contact_info=company,
         firebase_uid=current_user["uid"],
         db=db,
     )
