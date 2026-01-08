@@ -212,7 +212,7 @@ def get_company_profile(
 )
 def update_company_profile(
     request: Request,  # REQUIRED by SlowAPI
-    update: CompanyProfileUpdateSchema,
+    company_profile: CompanyProfileUpdateSchema,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -220,7 +220,7 @@ def update_company_profile(
     Update company profile (Firebase authenticated) .
     """
     company_db = update_company_profile_service(
-        company=update,
+        update=company_profile,
         firebase_uid=current_user["uid"],
         db=db,
     )
