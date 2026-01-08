@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import UUID
 from typing import List, Optional
 
@@ -12,33 +12,36 @@ class CompanyAddressCreateSchema(BaseModel):
 
 
 class CompanyDocumentCreateSchema(BaseModel):
-    documentType: Optional[str]
-    documentUrl: Optional[str]
+    documentType: Optional[str] = None
+    documentUrl: Optional[str] = None
 
 
 class ContactInfoSchema(BaseModel):
-    contactPersonName: Optional[str]
-    contactPersonPhone: Optional[str]
-    contactEmail: Optional[str]
+    contactPersonName: Optional[str] = None
+    contactPersonPhone: Optional[str] = None
+    contactEmail: Optional[str] = None
 
 
 class DocumentInfoSchema(BaseModel):
-    logoUrl: Optional[str]
-    documents: List[CompanyDocumentCreateSchema]
+    logoUrl: Optional[str] = None
+    documents: List[CompanyDocumentCreateSchema] = Field(default_factory=list)
 
 
 class CompanyInfoSchema(BaseModel):
     companyName: str
     industryType: str
-    gstNo: Optional[str]
+    gstNo: Optional[str] = None
     addresses: List[CompanyAddressCreateSchema]
     authPhone: str
 
 
 class CompanyProfileUpdateSchema(BaseModel):
-    companyName: Optional[str]
-    industryType: Optional[str]
-    gstNo: Optional[str]
-    addresses: Optional[List[CompanyAddressCreateSchema]]
-    contactInfo: Optional[ContactInfoSchema]
-    documentInfo: Optional[DocumentInfoSchema]
+    companyName: Optional[str] = None
+    industryType: Optional[str] = None
+    gstNo: Optional[str] = None
+    addresses: Optional[List[CompanyAddressCreateSchema]] = None
+    contactInfo: Optional[ContactInfoSchema] = None
+    documentInfo: Optional[DocumentInfoSchema] = None
+
+    class Config:
+        extra = "forbid"  # Forbid extra fields not defined in the schema

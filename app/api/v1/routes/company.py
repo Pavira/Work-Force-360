@@ -205,13 +205,13 @@ def get_company_profile(
 
 
 # -----------------------Update Company Profile Route----------------------- #
-@router.put(
+@router.patch(
     "/update_company_profile",
     status_code=status.HTTP_201_CREATED,
 )
 def update_company_profile(
     request: Request,  # REQUIRED by SlowAPI
-    company_info: CompanyProfileUpdateSchema,
+    update: CompanyProfileUpdateSchema,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -219,7 +219,7 @@ def update_company_profile(
     Update company profile (Firebase authenticated) .
     """
     company_db = create_company_profile_service(
-        company=company_info,
+        company=update,
         firebase_uid=current_user["uid"],
         db=db,
     )

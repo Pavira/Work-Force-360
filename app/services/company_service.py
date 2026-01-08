@@ -8,6 +8,7 @@ from app.models.company_models import (
 )
 from app.schemas.company_schema import (
     CompanyInfoSchema,
+    CompanyProfileUpdateSchema,
     ContactInfoSchema,
     DocumentInfoSchema,
 )
@@ -190,59 +191,98 @@ def update_document_info_service(
 
 # -----------------------Update Company Profile Service----------------------- #
 def update_company_profile_service(
-    company: CompanyInfoSchema,
+    update: CompanyProfileUpdateSchema,
     firebase_uid: str,
     db: Session,
 ) -> CompanyModel:
-    try:
-        company_profile = (
-            db.query(CompanyModel)
-            .filter(CompanyModel.firebase_uid == firebase_uid)
-            .first()
+    company = (
+        db.query(CompanyModel).filter(CompanyModel.firebase_uid == firebase_uid).first()
+    )
+
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Company profile not found",
         )
 
-        if not company_profile:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Company profile not found",
+    data = update.model_dump(exclude_unset=True)
+
+    # Simple field updates
+    if "companyName" in data:
+        company.company_name = data["companyName"]
+
+    if "industryType" in data:
+        company.industry = data["industryType"]
+
+    if "gstNo" in data:
+        company.gst_number = data["gstNo"]
+
+    # Address update (replace strategy)
+    if "addresses" in data:
+        db.query(CompanyAddressModel).filter(
+            CompanyAddressModel.company_id == company.id
+        ).delete(synchronize_session=False)
+
+        for addr in data["addresses"]:
+            db.add(
+                CompanyAddressModel(
+                    company_id=company.id,
+                    address=addr["address"],
+                    unit_name=addr["unitName"],
+                    city=addr["city"],
+                    state=addr["state"],
+                    pincode=addr["pincode"],
+                )
             )
+    # Contact Info update
+    if "contactInfo" in data:
+        ci = data["contactInfo"]
 
-        # Update fields
-        company_profile.company_name = company.companyName
-        company_profile.industry = company.industryType
-        company_profile.gst_number = company.gstNo
+        if "contactPersonName" in ci:
+            company.contact_person_name = ci["contactPersonName"]
 
-        # Update addresses
-        if company.addresses:
-            # Clear existing addresses
-            db.query(CompanyAddressModel).filter(
-                CompanyAddressModel.company_id == company_profile.id
-            ).delete()
+        if "contactPersonPhone" in ci:
+            company.contact_phone = ci["contactPersonPhone"]
 
-            for addr in company.addresses:
+        if "contactEmail" in ci:
+            exists = (
+                db.query(CompanyModel)
+                .filter(
+                    CompanyModel.contact_email == ci["contactEmail"],
+                    CompanyModel.id != company.id,
+                )
+                .first()
+            )
+            if exists:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Email already registered with another company",
+                )
+            company.contact_email = ci["contactEmail"]
+
+    # Document Info update
+    if "documentInfo" in data:
+        di = data["documentInfo"]
+
+        if "logoUrl" in di:
+            company.logo_url = di["logoUrl"]
+
+        if "documents" in di:
+            db.query(CompanyDocumentModel).filter(
+                CompanyDocumentModel.company_id == company.id
+            ).delete(synchronize_session=False)
+
+            for doc in di["documents"]:
                 db.add(
-                    CompanyAddressModel(
-                        company_id=company_profile.id,
-                        address=addr.address,
-                        unit_name=addr.unitName,
-                        city=addr.city,
-                        state=addr.state,
-                        pincode=addr.pincode,
+                    CompanyDocumentModel(
+                        company_id=company.id,
+                        document_type=doc.get("documentType"),
+                        document_url=doc.get("documentUrl"),
                     )
                 )
 
-        db.add(company_profile)
-        db.flush()
-        return company_profile
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        print("DB ERROR 👉", e)  # or logger.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error updating company profile",
-        )
+    db.flush()
+    return company
 
 
 # -----------------------End Update Company Profile Service----------------------- #
