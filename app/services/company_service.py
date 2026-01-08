@@ -6,12 +6,12 @@ from app.models.company_models import (
     CompanyAddressModel,
     CompanyDocumentModel,
 )
-from app.schemas.company_schema import CompanyRegistrationSchema
+from app.schemas.company_schema import CompanyInfoSchema
 
 
 # -----------------------Create Company Profile Service----------------------- #
 def create_company_profile_service(
-    company: CompanyRegistrationSchema,
+    company: CompanyInfoSchema,
     firebase_uid: str,
     db: Session,
 ) -> CompanyModel:
@@ -29,7 +29,9 @@ def create_company_profile_service(
             )
         # Validation 2 - Prevent duplicate registration for same email
         existing_emal = (
-            db.query(CompanyModel).filter(CompanyModel.email == company.email).first()
+            db.query(CompanyModel)
+            .filter(CompanyModel.contact_email == company.contactEmail)
+            .first()
         )
         if existing_emal:
             raise HTTPException(
@@ -41,11 +43,11 @@ def create_company_profile_service(
             firebase_uid=firebase_uid,
             # firebase_uid="firebase_uid",
             company_name=company.companyName,
-            industry=company.industry,
-            gst_number=company.gst,
+            industry=company.industryType,
+            gst_number=company.gstNo,
             contact_person_name=company.contactPersonName,
-            email=company.email,
-            phone=company.phone,
+            email=company.contactEmail,
+            phone=company.contactPersonPhone,
             logo_url=company.logoUrl,
         )
         db.add(company_db)

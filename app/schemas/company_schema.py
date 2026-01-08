@@ -5,28 +5,25 @@ from typing import List, Optional
 
 class CompanyAddressCreateSchema(BaseModel):
     address: str
-    unitName: Optional[str]
+    unitName: str
     city: str
     state: str
     pincode: str
 
 
 class CompanyDocumentCreateSchema(BaseModel):
-    documentType: str
-    documentUrl: str
+    documentType: Optional[str]
+    documentUrl: Optional[str]
 
 
-class CompanyRegistrationSchema(BaseModel):
+class CompanyInfoSchema(BaseModel):
     companyName: str
-    industry: str
-    gst: Optional[str]
-
-    contactPersonName: str
-    phone: str
-    email: str
-    phone: str
-
-    logoUrl: Optional[str]
-
+    industryType: str
+    gstNo: Optional[str]
     addresses: List[CompanyAddressCreateSchema]
+    authPhone: str
+    contactPersonName: Optional[str]
+    contactPersonPhone: Optional[str]
+    contactEmail: Optional[str]
+    logoUrl: Optional[str]
     documents: List[CompanyDocumentCreateSchema]

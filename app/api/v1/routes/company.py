@@ -5,7 +5,7 @@ from app.db.session import get_db
 from app.core.limiter import limiter
 
 from app.utils.response import custom_response
-from app.schemas.company_schema import CompanyRegistrationSchema
+from app.schemas.company_schema import CompanyInfoSchema
 from app.services.company_service import (
     create_company_profile_service,
     get_company_profile_service,
@@ -25,7 +25,7 @@ router = APIRouter()
 )  # Allow only 5 requests per minute per IP, ex - requests/minute - 10/second
 def create_company_profile(
     request: Request,  # REQUIRED by SlowAPI
-    company: CompanyRegistrationSchema,
+    company: CompanyInfoSchema,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):

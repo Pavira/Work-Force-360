@@ -21,9 +21,11 @@ class CompanyModel(Base):
     industry = Column(String, nullable=False)
     gst_number = Column(String, nullable=True)
 
-    contact_person_name = Column(String, nullable=False)
-    phone = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False)
+    auth_phone = Column(String, unique=True, nullable=False)
+
+    contact_person_name = Column(String, nullable=True)
+    contact_phone = Column(String, nullable=True)
+    contact_email = Column(String, unique=True, nullable=True)
 
     logo_url = Column(Text, nullable=True)
 
@@ -76,8 +78,8 @@ class CompanyDocumentModel(Base):
         UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True
     )
 
-    document_type = Column(String, nullable=False, index=True)
-    document_url = Column(Text, nullable=False)
+    document_type = Column(String, nullable=True, index=True)
+    document_url = Column(Text, nullable=True)
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
