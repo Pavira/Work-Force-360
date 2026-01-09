@@ -1,3 +1,4 @@
+import os
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
@@ -299,3 +300,37 @@ def update_company_profile_service(
 
 
 # -----------------------End Update Company Profile Service----------------------- #
+
+# -----------------------Get Terms and Conditions Service----------------------- #
+import boto3
+from botocore.exceptions import ClientError
+
+s3_client = boto3.client(
+    "s3",
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    region_name="ap-south-1",
+)
+
+BUCKET_NAME = "workforce360-terms"
+TERMS_KEY = "workforce_terms.html"  # latest pointer
+
+
+def get_terms_and_conditions() -> str:
+    try:
+        response = s3_client.get_object(
+            Bucket=BUCKET_NAME,
+            Key=TERMS_KEY,
+        )
+
+        html_content = response["Body"].read().decode("utf-8")
+        return html_content
+
+    except ClientError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to fetch Terms and Conditions",
+        )
+
+
+# -----------------------End Get Terms and Conditions Service----------------------- #

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, status, Depends
+from fastapi import APIRouter, Request, Response, status, Depends
 from sqlalchemy.orm import Session
 from app.core.firebase_auth import get_current_user
 from app.db.session import get_db
@@ -14,6 +14,7 @@ from app.schemas.company_schema import (
 from app.services.company_service import (
     create_company_profile_service,
     get_company_profile_service,
+    get_terms_and_conditions,
     update_company_profile_service,
     update_contact_info_service,
     update_document_info_service,
@@ -238,3 +239,18 @@ def update_company_profile(
 
 
 # -----------------------End Update Company Profile Service----------------------- #
+# -----------------------Fetch Terms and Conditions----------------------- #
+@router.get(
+    "/terms",
+    status_code=status.HTTP_200_OK,
+)
+def fetch_terms_and_conditions():
+    """
+    Fetch latest Terms and Conditions
+    """
+
+    html = get_terms_and_conditions()
+    return Response(content=html, media_type="text/html")
+
+
+# -----------------------End Fetch Terms and Conditions----------------------- #
