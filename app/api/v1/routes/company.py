@@ -1,3 +1,4 @@
+from uuid import uuid4
 from fastapi import APIRouter, Request, Response, status, Depends
 from sqlalchemy.orm import Session
 from app.core.firebase_auth import get_current_user
@@ -6,15 +7,19 @@ from app.core.limiter import limiter
 
 from app.utils.response import custom_response
 from app.schemas.company_schema import (
+    CompanyDocumentCreateSchema,
     CompanyInfoSchema,
     CompanyProfileUpdateSchema,
     ContactInfoSchema,
     DocumentInfoSchema,
+    UploadUrlRequest,
 )
 from app.services.company_service import (
     create_company_profile_service,
+    generate_upload_url_service,
     get_company_profile_service,
     get_terms_and_conditions,
+    save_document_service,
     update_company_profile_service,
     update_contact_info_service,
     update_document_info_service,
@@ -254,3 +259,49 @@ def fetch_terms_and_conditions():
 
 
 # -----------------------End Fetch Terms and Conditions----------------------- #
+
+
+# -----------------------Generate S3 Upload URL----------------------- #
+
+
+@router.post("/documents/upload-url")
+def generate_upload_url(
+    payload: UploadUrlRequest,
+    current_user=Depends(get_current_user),
+):
+
+    urls = generate_upload_url_service(
+        file_type=payload.file_type, current_user=current_user["uid"]
+    )
+
+    return custom_response(
+        success=True,
+        message="Upload URL generated successfully",
+        data=urls,
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Generate S3 Upload URL----------------------- #
+
+
+# -----------------------Save Document----------------------- #
+@router.post("/documents")
+def save_document(
+    payload: CompanyDocumentCreateSchema,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    document = save_document_service(
+        payload=payload, current_user=current_user["uid"], db=db
+    )
+
+    return custom_response(
+        success=True,
+        message="Document saved successfully",
+        data={"id": document.id, "document_type": document.document_type},
+        code=status.HTTP_201_CREATED,
+    )
+
+
+# -----------------------End Save Document----------------------- #

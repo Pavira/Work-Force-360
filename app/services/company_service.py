@@ -1,4 +1,5 @@
 import os
+from uuid import uuid4
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
@@ -8,6 +9,7 @@ from app.models.company_models import (
     CompanyDocumentModel,
 )
 from app.schemas.company_schema import (
+    CompanyDocumentCreateSchema,
     CompanyInfoSchema,
     CompanyProfileUpdateSchema,
     ContactInfoSchema,
@@ -334,3 +336,91 @@ def get_terms_and_conditions() -> str:
 
 
 # -----------------------End Get Terms and Conditions Service----------------------- #
+
+
+# -----------------------Generate S3 Upload URL Service----------------------- #
+def generate_upload_url_service(
+    file_type: str,
+    current_user,
+) -> dict:
+    try:
+        allowed_types = ["png", "jpg", "jpeg", "pdf"]
+        if file_type not in allowed_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unsupported file type",
+            )
+
+        CONTENT_TYPES = {
+            "png": "image/png",
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "pdf": "application/pdf",
+        }
+
+        key = f"company_docs/{current_user}/{uuid4()}.{file_type}"
+
+        url = s3_client.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": "workforce360-terms",
+                "Key": key,
+                "ContentType": CONTENT_TYPES[file_type],
+            },
+            ExpiresIn=300,  # 5 minutes
+        )
+
+        return {
+            "upload_url": url,
+            "file_url": f"https://workforce360-terms.s3.amazonaws.com/{key}",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("S3 ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error generating upload URL",
+        )
+
+
+# -----------------------End Generate S3 Upload URL Service----------------------- #
+
+
+# -----------------------Save Document Service----------------------- #
+def save_document_service(
+    payload: CompanyDocumentCreateSchema,
+    current_user: str,
+    db: Session,
+) -> CompanyDocumentModel:
+    try:
+        company = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == current_user)
+            .first()
+        )
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
+        document = CompanyDocumentModel(
+            company_id=company.id,
+            document_type=payload.documentType,
+            document_url=payload.documentUrl,
+        )
+        db.add(document)
+        db.flush()
+        return document
+
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error saving document",
+        )
+
+
+# -----------------------End Save Document Service----------------------- #

@@ -45,3 +45,7 @@ class CompanyProfileUpdateSchema(BaseModel):
 
     class Config:
         extra = "forbid"  # Forbid extra fields not defined in the schema
+
+
+class UploadUrlRequest(BaseModel):
+    file_type: str
