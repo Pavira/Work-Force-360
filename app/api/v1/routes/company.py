@@ -16,8 +16,10 @@ from app.schemas.company_schema import (
 )
 from app.services.company_service import (
     create_company_profile_service,
+    delete_document_service,
     generate_upload_url_service,
     get_company_profile_service,
+    get_document_service,
     get_terms_and_conditions,
     save_document_service,
     update_company_profile_service,
@@ -305,3 +307,51 @@ def save_document(
 
 
 # -----------------------End Save Document----------------------- #
+
+
+# -----------------------Get Document----------------------- #
+@router.get("/documents/{document_id}")
+def get_document(
+    document_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    url = get_document_service(
+        document_id=document_id,
+        current_user=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Document fetched successfully",
+        data={"view_url": url},
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Get Document----------------------- #
+
+
+# -----------------------Delete Document----------------------- #
+@router.delete("/documents/{document_id}")
+def delete_document(
+    document_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    delete_document_service(
+        document_id=document_id,
+        current_user=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Document deleted successfully",
+        data={},
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Delete Document----------------------- #

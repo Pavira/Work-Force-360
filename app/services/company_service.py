@@ -424,3 +424,82 @@ def save_document_service(
 
 
 # -----------------------End Save Document Service----------------------- #
+
+
+# -----------------------Get Document Service----------------------- #
+def get_document_service(
+    document_id: str,
+    current_user: str,
+    db: Session,
+) -> str:
+    document = (
+        db.query(CompanyDocumentModel)
+        .join(CompanyModel)
+        .filter(
+            CompanyDocumentModel.id == document_id,
+            CompanyModel.firebase_uid == current_user,
+        )
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    # Extract S3 key from URL
+    s3_key = document.document_url.split(".com/")[1]
+
+    presigned_url = s3_client.generate_presigned_url(
+        ClientMethod="get_object",
+        Params={
+            "Bucket": "workforce360-terms",
+            "Key": s3_key,
+        },
+        ExpiresIn=300,  # 5 minutes
+    )
+
+    return presigned_url
+
+
+# -----------------------End Get Document Service----------------------- #
+
+
+# -----------------------Delete Document Service----------------------- #
+def delete_document_service(
+    document_id: str,
+    current_user: str,
+    db: Session,
+):
+    document = (
+        db.query(CompanyDocumentModel)
+        .join(CompanyModel)
+        .filter(
+            CompanyDocumentModel.id == document_id,
+            CompanyModel.firebase_uid == current_user,
+        )
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    # Extract S3 key
+    s3_key = document.document_url.split(".com/")[1]
+
+    # Delete from S3
+    s3_client.delete_object(
+        Bucket="workforce360-terms",
+        Key=s3_key,
+    )
+
+    # Delete from DB
+    db.delete(document)
+    db.flush()
+
+
+# -----------------------End Delete Document Service----------------------- #
