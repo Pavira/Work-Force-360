@@ -256,7 +256,9 @@ def update_company_profile(
     status_code=status.HTTP_200_OK,
 )
 @limiter.limit("5/minute")
-def fetch_terms_and_conditions():
+def fetch_terms_and_conditions(
+    request: Request,  # REQUIRED by SlowAPI
+):
     """
     Fetch latest Terms and Conditions
     """
@@ -274,6 +276,7 @@ def fetch_terms_and_conditions():
 @router.post("/documents/upload-url")
 @limiter.limit("5/minute")
 def generate_upload_url(
+    request: Request,  # REQUIRED by SlowAPI
     payload: UploadUrlRequest,
     current_user=Depends(get_current_user),
 ):
@@ -297,6 +300,7 @@ def generate_upload_url(
 @router.post("/documents")
 @limiter.limit("5/minute")
 def save_document(
+    request: Request,  # REQUIRED by SlowAPI
     payload: CompanyDocumentCreateSchema,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
@@ -320,6 +324,7 @@ def save_document(
 @router.get("/documents/{document_id}")
 @limiter.limit("5/minute")
 def get_document(
+    request: Request,  # REQUIRED by SlowAPI
     document_id: str,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
@@ -345,6 +350,7 @@ def get_document(
 @router.delete("/documents/{document_id}")
 @limiter.limit("5/minute")
 def delete_document(
+    request: Request,  # REQUIRED by SlowAPI
     document_id: str,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
@@ -370,6 +376,7 @@ def delete_document(
 @router.patch("/update_company_address/{address_id}")
 @limiter.limit("5/minute")
 def update_company_address(
+    request: Request,  # REQUIRED by SlowAPI
     address_id: UUID,
     new_address: CompanyAddressCreateSchema,
     db: Session = Depends(get_db),
@@ -395,6 +402,7 @@ def update_company_address(
 @router.post("/add_new_company_address")
 @limiter.limit("5/minute")
 def add_new_company_address(
+    request: Request,  # REQUIRED by SlowAPI
     new_address: CompanyAddressCreateSchema,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
