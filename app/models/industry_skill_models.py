@@ -92,16 +92,3 @@ class SubCategorySkillModel(Base):
             "category_skill_id", "name", name="uq_sub_category_skill_category_name"
         ),
     )
-
-
-# Automobile & Transport
-# Construction & Civil
-# Electrical, Electronics & Plumbing
-# Food & Hospitality
-# Healthcare & Support
-# Logistics, Retail & Warehousing
-# Mechanical, Metal & Fabrication
-# Plastic, Chemical & Manufacturing
-# Printing, Paper & Packaging
-# Textile, Garments & Leather
-# Wood, Furniture & HandicrafGeneral / Unskilled Roles

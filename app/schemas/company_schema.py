@@ -29,7 +29,8 @@ class DocumentInfoSchema(BaseModel):
 
 class CompanyInfoSchema(BaseModel):
     companyName: str
-    industryType: str
+    industryName: str
+    industryId: UUID
     gstNo: Optional[str] = None
     addresses: List[CompanyAddressCreateSchema]
     authPhone: str

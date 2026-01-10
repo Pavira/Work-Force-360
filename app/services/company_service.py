@@ -9,6 +9,7 @@ from app.models.company_models import (
     CompanyDocumentModel,
 )
 from app.schemas.company_schema import (
+    CompanyAddressCreateSchema,
     CompanyDocumentCreateSchema,
     CompanyInfoSchema,
     CompanyProfileUpdateSchema,
@@ -58,7 +59,8 @@ def create_company_profile_service(
         company_db = CompanyModel(
             firebase_uid=firebase_uid,
             company_name=company.companyName,
-            industry=company.industryType,
+            industry_name=company.industryName,
+            industry_id=company.industryId,
             gst_number=company.gstNo,
             auth_phone=company.authPhone,
         )
@@ -503,3 +505,89 @@ def delete_document_service(
 
 
 # -----------------------End Delete Document Service----------------------- #
+
+
+# -----------------------Update Company Address Service----------------------- #
+def update_company_address_service(
+    address_id: str,
+    new_address: CompanyAddressCreateSchema,
+    db: Session,
+) -> CompanyAddressModel:
+    try:
+        company_address = (
+            db.query(CompanyAddressModel)
+            .filter(CompanyAddressModel.id == address_id)
+            .first()
+        )
+
+        if not company_address:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company address not found",
+            )
+
+        # Update fields
+        company_address.address = new_address.address
+        company_address.unit_name = new_address.unitName
+        company_address.city = new_address.city
+        company_address.state = new_address.state
+        company_address.pincode = new_address.pincode
+
+        db.flush()
+        return company_address
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating company address",
+        )
+
+
+# -----------------------End Update Company Address Service----------------------- #
+
+
+# -----------------------Add New Company Service----------------------- #
+def add_new_company_service(
+    new_address: CompanyAddressCreateSchema,
+    firebase_uid: str,
+    db: Session,
+) -> CompanyModel:
+    try:
+        company = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
+        new_company_address = CompanyAddressModel(
+            company_id=company.id,
+            address=new_address.address,
+            unit_name=new_address.unitName,
+            city=new_address.city,
+            state=new_address.state,
+            pincode=new_address.pincode,
+        )
+        db.add(new_company_address)
+        db.flush()
+        return company
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error adding new company address",
+        )
+
+
+# -----------------------End Add New Company Service----------------------- #

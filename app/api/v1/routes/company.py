@@ -1,4 +1,4 @@
-from uuid import uuid4
+from uuid import UUID, uuid4
 from fastapi import APIRouter, Request, Response, status, Depends
 from sqlalchemy.orm import Session
 from app.core.firebase_auth import get_current_user
@@ -7,6 +7,7 @@ from app.core.limiter import limiter
 
 from app.utils.response import custom_response
 from app.schemas.company_schema import (
+    CompanyAddressCreateSchema,
     CompanyDocumentCreateSchema,
     CompanyInfoSchema,
     CompanyProfileUpdateSchema,
@@ -15,6 +16,7 @@ from app.schemas.company_schema import (
     UploadUrlRequest,
 )
 from app.services.company_service import (
+    add_new_company_service,
     create_company_profile_service,
     delete_document_service,
     generate_upload_url_service,
@@ -22,6 +24,7 @@ from app.services.company_service import (
     get_document_service,
     get_terms_and_conditions,
     save_document_service,
+    update_company_address_service,
     update_company_profile_service,
     update_contact_info_service,
     update_document_info_service,
@@ -218,6 +221,7 @@ def get_company_profile(
     "/update_company_profile",
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("5/minute")
 def update_company_profile(
     request: Request,  # REQUIRED by SlowAPI
     company_profile: CompanyProfileUpdateSchema,
@@ -251,6 +255,7 @@ def update_company_profile(
     "/terms",
     status_code=status.HTTP_200_OK,
 )
+@limiter.limit("5/minute")
 def fetch_terms_and_conditions():
     """
     Fetch latest Terms and Conditions
@@ -267,6 +272,7 @@ def fetch_terms_and_conditions():
 
 
 @router.post("/documents/upload-url")
+@limiter.limit("5/minute")
 def generate_upload_url(
     payload: UploadUrlRequest,
     current_user=Depends(get_current_user),
@@ -289,6 +295,7 @@ def generate_upload_url(
 
 # -----------------------Save Document----------------------- #
 @router.post("/documents")
+@limiter.limit("5/minute")
 def save_document(
     payload: CompanyDocumentCreateSchema,
     db: Session = Depends(get_db),
@@ -311,6 +318,7 @@ def save_document(
 
 # -----------------------Get Document----------------------- #
 @router.get("/documents/{document_id}")
+@limiter.limit("5/minute")
 def get_document(
     document_id: str,
     db: Session = Depends(get_db),
@@ -335,6 +343,7 @@ def get_document(
 
 # -----------------------Delete Document----------------------- #
 @router.delete("/documents/{document_id}")
+@limiter.limit("5/minute")
 def delete_document(
     document_id: str,
     db: Session = Depends(get_db),
@@ -355,3 +364,53 @@ def delete_document(
 
 
 # -----------------------End Delete Document----------------------- #
+
+
+# -----------------------Update Company Address in profile----------------------- #
+@router.patch("/update_company_address/{address_id}")
+@limiter.limit("5/minute")
+def update_company_address(
+    address_id: UUID,
+    new_address: CompanyAddressCreateSchema,
+    db: Session = Depends(get_db),
+):
+    company_address = update_company_address_service(
+        address_id=address_id,
+        new_address=new_address,
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Company address updated successfully",
+        data={"company_address": company_address},
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Update Company Address----------------------- #
+
+
+# -----------------------Add New Company Address----------------------- #
+@router.post("/add_new_company_address")
+@limiter.limit("5/minute")
+def add_new_company_address(
+    new_address: CompanyAddressCreateSchema,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    company_address = add_new_company_service(
+        new_address=new_address,
+        db=db,
+        firebase_uid=current_user["uid"],
+    )
+
+    return custom_response(
+        success=True,
+        message="New company address added successfully",
+        data={"company_address": company_address},
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Add New Company Address----------------------- #
