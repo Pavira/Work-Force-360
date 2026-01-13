@@ -18,6 +18,7 @@ from app.schemas.company_schema import (
 from app.services.company_service import (
     add_new_company_service,
     create_company_profile_service,
+    delete_company_profile_service,
     delete_document_service,
     generate_upload_url_service,
     get_company_profile_service,
@@ -422,3 +423,56 @@ def add_new_company_address(
 
 
 # -----------------------End Add New Company Address----------------------- #
+
+
+# -----------------------Get All Company Details----------------------- #
+@router.get(
+    "/all_company_details",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_all_company_details(
+    request: Request,  # REQUIRED by SlowAPI
+    db: Session = Depends(get_db),
+):
+    """
+    Get all company details.
+    """
+    company_details = get_company_profile_service(db=db)
+
+    return custom_response(
+        success=True,
+        message="All company details fetched successfully",
+        data=company_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Get All Company Details----------------------- #
+
+
+# -----------------------Delete company details----------------------- #
+@router.delete(
+    "/delete_company/{phone_number}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def delete_company_details(
+    request: Request,  # REQUIRED by SlowAPI
+    phone_number: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Delete company details.
+    """
+    company_details = delete_company_profile_service(phone_number=phone_number, db=db)
+
+    return custom_response(
+        success=True,
+        message="Company details deleted successfully",
+        data=company_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Delete company details----------------------- #

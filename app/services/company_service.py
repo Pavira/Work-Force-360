@@ -591,3 +591,59 @@ def add_new_company_service(
 
 
 # -----------------------End Add New Company Service----------------------- #
+
+
+# -----------------------Get All Company details Service----------------------- #
+def get_all_company_details_service(
+    db: Session,
+) -> list[CompanyModel]:
+    try:
+        return db.query(CompanyModel).all()
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching all company details",
+        )
+
+
+# -----------------------End Get All Company details Service----------------------- #
+
+
+# -----------------------Delete Company Details Service----------------------- #
+def delete_company_profile_service(
+    phone_number: str,
+    db: Session,
+) -> CompanyModel:
+    try:
+        company = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.auth_phone == phone_number)
+            .first()
+        )
+
+        db.query(CompanyAddressModel).filter(
+            CompanyAddressModel.company_id == company.id
+        ).delete()
+
+        db.query(CompanyDocumentModel).filter(
+            CompanyDocumentModel.company_id == company.id
+        ).delete()
+
+        db.delete(company)
+        db.flush()
+
+        return company
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error deleting company details",
+        )
+
+
+# -----------------------End Delete Company Details Service----------------------- #
