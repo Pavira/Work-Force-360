@@ -21,6 +21,7 @@ from app.services.company_service import (
     delete_company_profile_service,
     delete_document_service,
     generate_upload_url_service,
+    get_all_company_details_service,
     get_company_profile_service,
     get_document_service,
     get_terms_and_conditions,
@@ -438,7 +439,7 @@ def get_all_company_details(
     """
     Get all company details.
     """
-    company_details = get_company_profile_service(db=db)
+    company_details = get_all_company_details_service(db=db)
 
     return custom_response(
         success=True,
