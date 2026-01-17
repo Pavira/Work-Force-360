@@ -23,6 +23,7 @@ from app.services.company_service import (
     generate_upload_url_service,
     get_all_address_details_service,
     get_all_company_details_service,
+    get_all_documents_details_service,
     get_company_profile_service,
     get_document_service,
     get_terms_and_conditions,
