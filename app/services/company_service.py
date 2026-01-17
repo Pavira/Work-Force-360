@@ -647,3 +647,41 @@ def delete_company_profile_service(
 
 
 # -----------------------End Delete Company Details Service----------------------- #
+
+
+# -----------------------Get All Address details Service----------------------- #
+def get_all_address_details_service(
+    db: Session,
+) -> list[CompanyAddressModel]:
+    try:
+        return db.query(CompanyAddressModel).all()
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching all address details",
+        )
+
+
+# -----------------------End Get All Address details Service----------------------- #
+
+
+# -----------------------Get All Documents details Service----------------------- #
+def get_all_documents_details_service(
+    db: Session,
+) -> list[CompanyDocumentModel]:
+    try:
+        return db.query(CompanyDocumentModel).all()
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching all document details",
+        )
+
+
+# -----------------------End Get All Documents details Service----------------------- #

@@ -21,6 +21,7 @@ from app.services.company_service import (
     delete_company_profile_service,
     delete_document_service,
     generate_upload_url_service,
+    get_all_address_details_service,
     get_all_company_details_service,
     get_company_profile_service,
     get_document_service,
@@ -477,3 +478,55 @@ def delete_company_details(
 
 
 # -----------------------End Delete company details----------------------- #
+
+
+# -----------------------Get All Address Details----------------------- #
+@router.get(
+    "/all_address_details",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def get_all_address_details(
+    request: Request,  # REQUIRED by SlowAPI
+    db: Session = Depends(get_db),
+):
+    """
+    Get all address details.
+    """
+    address_details = get_all_address_details_service(db=db)
+
+    return custom_response(
+        success=True,
+        message="All address details fetched successfully",
+        data=address_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Get All Address Details----------------------- #
+
+
+# -----------------------Get All Documents Details----------------------- #
+@router.get(
+    "/all_documents_details",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def get_all_documents_details(
+    request: Request,  # REQUIRED by SlowAPI
+    db: Session = Depends(get_db),
+):
+    """
+    Get all documents details.
+    """
+    documents_details = get_all_documents_details_service(db=db)
+
+    return custom_response(
+        success=True,
+        message="All documents details fetched successfully",
+        data=documents_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Get All Documents Details----------------------- #
