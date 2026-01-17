@@ -81,7 +81,7 @@ def company_exists(
     status_code=status.HTTP_201_CREATED,
 )
 @limiter.limit(
-    "5/minute"
+    "30/minute"
 )  # Allow only 5 requests per minute per IP, ex - requests/minute - 10/second
 def create_company_profile(
     request: Request,  # REQUIRED by SlowAPI
@@ -119,7 +119,7 @@ def create_company_profile(
     status_code=status.HTTP_201_CREATED,
 )
 @limiter.limit(
-    "5/minute"
+    "30/minute"
 )  # Allow only 5 requests per minute per IP, ex - requests/minute - 10/second
 def update_contact_info(
     request: Request,  # REQUIRED by SlowAPI
@@ -157,7 +157,7 @@ def update_contact_info(
     status_code=status.HTTP_201_CREATED,
 )
 @limiter.limit(
-    "5/minute"
+    "30/minute"
 )  # Allow only 5 requests per minute per IP, ex - requests/minute - 10/second
 def update_document_info(
     request: Request,  # REQUIRED by SlowAPI
@@ -169,7 +169,7 @@ def update_document_info(
     Update document info for company profile (Firebase authenticated) .
     """
     company_db = update_document_info_service(
-        company=company,
+        contact_info=company,
         firebase_uid=current_user["uid"],
         db=db,
     )
@@ -223,7 +223,7 @@ def get_company_profile(
     "/update_company_profile",
     status_code=status.HTTP_201_CREATED,
 )
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 def update_company_profile(
     request: Request,  # REQUIRED by SlowAPI
     company_profile: CompanyProfileUpdateSchema,
@@ -257,7 +257,7 @@ def update_company_profile(
     "/terms",
     status_code=status.HTTP_200_OK,
 )
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 def fetch_terms_and_conditions(
     request: Request,  # REQUIRED by SlowAPI
 ):
@@ -276,7 +276,7 @@ def fetch_terms_and_conditions(
 
 
 @router.post("/documents/upload-url")
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 def generate_upload_url(
     request: Request,  # REQUIRED by SlowAPI
     payload: UploadUrlRequest,
@@ -300,7 +300,7 @@ def generate_upload_url(
 
 # -----------------------Save Document----------------------- #
 @router.post("/documents")
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 def save_document(
     request: Request,  # REQUIRED by SlowAPI
     payload: CompanyDocumentCreateSchema,
@@ -324,7 +324,7 @@ def save_document(
 
 # -----------------------Get Document----------------------- #
 @router.get("/documents/{document_id}")
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 def get_document(
     request: Request,  # REQUIRED by SlowAPI
     document_id: str,
@@ -350,7 +350,7 @@ def get_document(
 
 # -----------------------Delete Document----------------------- #
 @router.delete("/documents/{document_id}")
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 def delete_document(
     request: Request,  # REQUIRED by SlowAPI
     document_id: str,
@@ -376,7 +376,7 @@ def delete_document(
 
 # -----------------------Update Company Address in profile----------------------- #
 @router.patch("/update_company_address/{address_id}")
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 def update_company_address(
     request: Request,  # REQUIRED by SlowAPI
     address_id: UUID,
@@ -402,7 +402,7 @@ def update_company_address(
 
 # -----------------------Add New Company Address----------------------- #
 @router.post("/add_new_company_address")
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 def add_new_company_address(
     request: Request,  # REQUIRED by SlowAPI
     new_address: CompanyAddressCreateSchema,
