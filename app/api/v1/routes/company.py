@@ -18,6 +18,7 @@ from app.schemas.company_schema import (
 from app.services.company_service import (
     add_new_company_service,
     create_company_profile_service,
+    delete_company_address_service,
     delete_company_profile_service,
     delete_document_service,
     generate_upload_url_service,
