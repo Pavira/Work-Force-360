@@ -1,6 +1,6 @@
 import os
 from uuid import uuid4
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from fastapi import HTTPException, status
 
 from app.models.company_models import (
@@ -22,21 +22,71 @@ from app.schemas.company_schema import (
 def get_company_profile_service(
     firebase_uid: str,
     db: Session,
-) -> CompanyModel:
-    try:
-        return (
-            db.query(CompanyModel)
-            .filter(CompanyModel.firebase_uid == firebase_uid)
-            .first()
+) -> dict:
+
+    company = (
+        db.query(CompanyModel)
+        .options(
+            selectinload(CompanyModel.addresses),
+            selectinload(CompanyModel.documents),
         )
-    except HTTPException:
-        raise
-    except Exception as e:
-        print("DB ERROR 👉", e)  # or logger.exception(e)
+        .filter(CompanyModel.firebase_uid == firebase_uid)
+        .first()
+    )
+
+    if not company:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error fetching company profile",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Company profile not found",
         )
+
+    # Extract profile image from documents
+    profile_image = None
+    other_documents = []
+
+    for doc in company.documents:
+        if doc.document_type == "profile_image":
+            profile_image = doc.document_url
+        # else:
+        #     other_documents.append(
+        #         {
+        #             "id": doc.id,
+        #             "document_type": doc.document_type,
+        #             "document_url": doc.document_url,
+        #         }
+        #     )
+
+    return {
+        "id": company.id,
+        "firebase_uid": company.firebase_uid,
+        "company_name": company.company_name,
+        "industry_id": company.industry_id,
+        "industry_name": company.industry_name,
+        "gst_number": company.gst_number,
+        "auth_phone": company.auth_phone,
+        "contact_person_name": company.contact_person_name,
+        "contact_phone": company.contact_phone,
+        "contact_email": company.contact_email,
+        "logo_url": company.logo_url,
+        "status": company.status,
+        "is_verified": company.is_verified,
+        "is_active": company.is_active,
+        "profile_image": profile_image,
+        "addresses": [
+            {
+                "id": addr.id,
+                "address": addr.address,
+                "unit_name": addr.unit_name,
+                "city": addr.city,
+                "state": addr.state,
+                "pincode": addr.pincode,
+            }
+            for addr in company.addresses
+        ],
+        "documents": other_documents,
+        "created_at": company.created_at,
+        "updated_at": company.updated_at,
+    }
 
 
 # -----------------------End Get Company Profile Service ----------------------- #
