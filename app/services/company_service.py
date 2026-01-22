@@ -18,6 +18,20 @@ from app.schemas.company_schema import (
 )
 
 
+# -----------------------Company profile exist or not Service ----------------------- #
+def company_profile_exist_service(
+    firebase_uid: str,
+    db: Session,
+) -> CompanyModel | None:
+
+    return (
+        db.query(CompanyModel).filter(CompanyModel.firebase_uid == firebase_uid).first()
+    )
+
+
+# -----------------------End Company profile exist or not Service ----------------------- #
+
+
 # -----------------------Get Company Profile Service ----------------------- #
 def get_company_profile_service(
     firebase_uid: str,

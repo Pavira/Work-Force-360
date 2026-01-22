@@ -17,6 +17,7 @@ from app.schemas.company_schema import (
 )
 from app.services.company_service import (
     add_new_company_service,
+    company_profile_exist_service,
     create_company_profile_service,
     delete_company_address_service,
     delete_company_profile_service,
@@ -40,21 +41,22 @@ router = APIRouter()
 
 
 # -----------------------Company exist or not------------------------ #
-@router.get(
-    "/company_exists",
-    status_code=status.HTTP_200_OK,
-)
+@router.get("/company_exists", status_code=status.HTTP_200_OK)
 def company_exists(
-    request: Request,  # REQUIRED by SlowAPI
+    request: Request,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
     """
     Check if company profile exists (Firebase authenticated).
     """
-    company_db = get_company_profile_service(firebase_uid=current_user["uid"], db=db)
 
-    if not company_db:
+    company = company_profile_exist_service(
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    if not company:
         return custom_response(
             success=True,
             message="Company profile not found",
@@ -67,9 +69,9 @@ def company_exists(
         message="Company profile found",
         data={
             "exists": True,
-            "id": company_db.id,
-            "company_name": company_db.company_name,
-            "status": company_db.status,
+            "id": company.id,
+            "company_name": company.company_name,
+            "status": company.status,
         },
         code=status.HTTP_200_OK,
     )
