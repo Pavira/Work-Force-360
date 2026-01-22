@@ -380,6 +380,10 @@ s3_client = boto3.client(
     region_name="us-east-1",
 )
 
+objects = s3_client.list_objects_v2(Bucket="workforce360-terms", Prefix="company_docs/")
+
+print(objects)
+
 BUCKET_NAME = "workforce360-terms"
 TERMS_KEY = "workforce_terms.html"  # latest pointer
 
