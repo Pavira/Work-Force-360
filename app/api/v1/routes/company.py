@@ -278,7 +278,7 @@ def fetch_terms_and_conditions(
 # -----------------------Generate S3 Upload URL----------------------- #
 
 
-@router.post("/documents/upload-url")
+@router.put("/documents/upload-url")
 @limiter.limit("30/minute")
 def generate_upload_url(
     request: Request,  # REQUIRED by SlowAPI
