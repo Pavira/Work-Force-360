@@ -593,6 +593,41 @@ def add_new_company_service(
 # -----------------------End Add New Company Service----------------------- #
 
 
+# -----------------------Delete Particular Company Address----------------------- #
+def delete_company_address_service(
+    address_id: str,
+    db: Session,
+) -> CompanyAddressModel:
+    try:
+        company_address = (
+            db.query(CompanyAddressModel)
+            .filter(CompanyAddressModel.id == address_id)
+            .first()
+        )
+
+        if not company_address:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company address not found",
+            )
+
+        db.delete(company_address)
+        db.flush()
+        return company_address
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error deleting company address",
+        )
+
+
+# -----------------------End Delete Particular Company Address----------------------- #
+
+
 # -----------------------Get All Company details Service----------------------- #
 def get_all_company_details_service(
     db: Session,

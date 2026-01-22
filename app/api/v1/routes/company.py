@@ -428,6 +428,30 @@ def add_new_company_address(
 # -----------------------End Add New Company Address----------------------- #
 
 
+# -----------------------Delete Particular Company Address----------------------- #
+@router.delete("/delete_company_address/{address_id}")
+@limiter.limit("30/minute")
+def delete_company_address(
+    request: Request,  # REQUIRED by SlowAPI
+    address_id: UUID,
+    db: Session = Depends(get_db),
+):
+    company_address = delete_company_address_service(
+        address_id=address_id,
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Company address deleted successfully",
+        data={"company_address": company_address},
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Delete Particular Company Address----------------------- #
+
+
 # -----------------------Get All Company Details----------------------- #
 @router.get(
     "/all_company_details",
