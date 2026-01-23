@@ -50,3 +50,7 @@ class CompanyProfileUpdateSchema(BaseModel):
 
 class UploadUrlRequest(BaseModel):
     file_type: str
+
+
+class CompanyNameSchema(BaseModel):
+    companyName: str

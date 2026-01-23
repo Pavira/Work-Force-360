@@ -10,6 +10,7 @@ from app.schemas.company_schema import (
     CompanyAddressCreateSchema,
     CompanyDocumentCreateSchema,
     CompanyInfoSchema,
+    CompanyNameSchema,
     CompanyProfileUpdateSchema,
     ContactInfoSchema,
     DocumentInfoSchema,
@@ -31,6 +32,7 @@ from app.services.company_service import (
     get_terms_and_conditions,
     save_document_service,
     update_company_address_service,
+    update_company_name_service,
     update_company_profile_service,
     update_contact_info_service,
     update_document_info_service,
@@ -224,36 +226,36 @@ def get_company_profile(
 
 
 # -----------------------Update Company Profile Route----------------------- #
-@router.patch(
-    "/update_company_profile",
-    status_code=status.HTTP_201_CREATED,
-)
-@limiter.limit("30/minute")
-def update_company_profile(
-    request: Request,  # REQUIRED by SlowAPI
-    company_profile: CompanyProfileUpdateSchema,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
-    """
-    Update company profile (Firebase authenticated) .
-    """
-    company_db = update_company_profile_service(
-        update=company_profile,
-        firebase_uid=current_user["uid"],
-        db=db,
-    )
+# @router.patch(
+#     "/update_company_profile",
+#     status_code=status.HTTP_201_CREATED,
+# )
+# @limiter.limit("30/minute")
+# def update_company_profile(
+#     request: Request,  # REQUIRED by SlowAPI
+#     company_profile: CompanyProfileUpdateSchema,
+#     db: Session = Depends(get_db),
+#     current_user: dict = Depends(get_current_user),
+# ):
+#     """
+#     Update company profile (Firebase authenticated) .
+#     """
+#     company_db = update_company_profile_service(
+#         update=company_profile,
+#         firebase_uid=current_user["uid"],
+#         db=db,
+#     )
 
-    return custom_response(
-        success=True,
-        message="Company profile updated successfully",
-        data={
-            "id": company_db.id,
-            "company_name": company_db.company_name,
-            "status": company_db.status,
-        },
-        code=status.HTTP_201_CREATED,
-    )
+#     return custom_response(
+#         success=True,
+#         message="Company profile updated successfully",
+#         data={
+#             "id": company_db.id,
+#             "company_name": company_db.company_name,
+#             "status": company_db.status,
+#         },
+#         code=status.HTTP_201_CREATED,
+#     )
 
 
 # -----------------------End Update Company Profile Service----------------------- #
@@ -558,3 +560,34 @@ def get_all_documents_details(
 
 
 # -----------------------End Get All Documents Details----------------------- #
+
+
+# -----------------------Update Company Name----------------------- #
+@router.patch(
+    "/update_company_name",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit(
+    "30/minute"
+)  # Allow only 5 requests per minute per IP, ex - requests/minute - 10/second
+def update_company_name(
+    request: Request,  # REQUIRED by SlowAPI
+    company_name: CompanyNameSchema,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    updated_name = update_company_name_service(
+        new_company_name=company_name.companyName,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Company name updated successfully",
+        data={"company_name": updated_name},
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Update Company Name----------------------- #

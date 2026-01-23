@@ -55,20 +55,20 @@ def get_company_profile_service(
         )
 
     # Extract profile image from documents
-    profile_image = None
-    other_documents = []
+    # profile_image = None
+    # other_documents = []
 
-    for doc in company.documents:
-        if doc.document_type == "profile_image":
-            profile_image = doc.document_url
-        # else:
-        #     other_documents.append(
-        #         {
-        #             "id": doc.id,
-        #             "document_type": doc.document_type,
-        #             "document_url": doc.document_url,
-        #         }
-        #     )
+    # for doc in company.documents:
+    #     if doc.document_type == "profile_image":
+    #         profile_image = doc.document_url
+    # else:
+    #     other_documents.append(
+    #         {
+    #             "id": doc.id,
+    #             "document_type": doc.document_type,
+    #             "document_url": doc.document_url,
+    #         }
+    #     )
 
     return {
         "id": company.id,
@@ -85,7 +85,6 @@ def get_company_profile_service(
         "status": company.status,
         "is_verified": company.is_verified,
         "is_active": company.is_active,
-        "profile_image": profile_image,
         "addresses": [
             {
                 "id": addr.id,
@@ -97,7 +96,6 @@ def get_company_profile_service(
             }
             for addr in company.addresses
         ],
-        "documents": other_documents,
         "created_at": company.created_at,
         "updated_at": company.updated_at,
     }
@@ -788,3 +786,39 @@ def get_all_documents_details_service(
 
 
 # -----------------------End Get All Documents details Service----------------------- #
+
+
+# -----------------------Update Company name Service----------------------- #
+def update_company_name_service(
+    firebase_uid: str,
+    new_company_name: str,
+    db: Session,
+) -> str:
+    try:
+        company = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
+        company.company_name = new_company_name
+        db.flush()
+        return company.company_name
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating company name",
+        )
+
+
+# -----------------------End Update Company name Service----------------------- #
