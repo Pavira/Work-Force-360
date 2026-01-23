@@ -11,6 +11,7 @@ from app.schemas.company_schema import (
     CompanyDocumentCreateSchema,
     CompanyInfoSchema,
     CompanyNameSchema,
+    CompanyProfileDetailsSchema,
     CompanyProfileUpdateSchema,
     ContactInfoSchema,
     DocumentInfoSchema,
@@ -33,6 +34,7 @@ from app.services.company_service import (
     save_document_service,
     update_company_address_service,
     update_company_name_service,
+    update_company_profile_details_service,
     update_company_profile_service,
     update_contact_info_service,
     update_document_info_service,
@@ -562,32 +564,39 @@ def get_all_documents_details(
 # -----------------------End Get All Documents Details----------------------- #
 
 
-# -----------------------Update Company Name----------------------- #
+# -----------------------Update Company Profile Details----------------------- #
 @router.patch(
-    "/update_company_name",
+    "/update_company_profile_details",
     status_code=status.HTTP_200_OK,
 )
 @limiter.limit(
     "30/minute"
 )  # Allow only 5 requests per minute per IP, ex - requests/minute - 10/second
-def update_company_name(
+def update_company_profile_details(
     request: Request,  # REQUIRED by SlowAPI
-    company_name: CompanyNameSchema,
+    company_details: CompanyProfileDetailsSchema,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    updated_name = update_company_name_service(
-        new_company_name=company_name.companyName,
+    """
+    Update company profile details (Firebase authenticated) .
+    """
+    company_details = update_company_profile_details_service(
+        company_details=company_details,
         firebase_uid=current_user["uid"],
         db=db,
     )
 
     return custom_response(
         success=True,
-        message="Company name updated successfully",
-        data={"company_name": updated_name},
+        message="Company profile details updated successfully",
+        data={
+            "id": company_details.id,
+            # "company_name": company_db.company_name,
+            # "status": company_db.status,
+        },
         code=status.HTTP_200_OK,
     )
 
 
-# -----------------------End Update Company Name----------------------- #
+# -----------------------End Update Profile Details----------------------- #

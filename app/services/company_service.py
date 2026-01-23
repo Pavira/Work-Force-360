@@ -12,6 +12,7 @@ from app.schemas.company_schema import (
     CompanyAddressCreateSchema,
     CompanyDocumentCreateSchema,
     CompanyInfoSchema,
+    CompanyProfileDetailsSchema,
     CompanyProfileUpdateSchema,
     ContactInfoSchema,
     DocumentInfoSchema,
@@ -788,10 +789,10 @@ def get_all_documents_details_service(
 # -----------------------End Get All Documents details Service----------------------- #
 
 
-# -----------------------Update Company name Service----------------------- #
-def update_company_name_service(
+# -----------------------Update Company Profile Details Service----------------------- #
+def update_company_profile_details_service(
     firebase_uid: str,
-    new_company_name: str,
+    company_details: CompanyProfileDetailsSchema,
     db: Session,
 ) -> str:
     try:
@@ -807,9 +808,14 @@ def update_company_name_service(
                 detail="Company profile not found",
             )
 
-        company.company_name = new_company_name
+        company.company_name = company_details.companyName
+        company.industry_name = company_details.industryName
+        company.industry_id = company_details.industryId
+        if company_details.gstNo is not None:
+            company.gst_number = company_details.gstNo
+
         db.flush()
-        return company.company_name
+        return company
 
     except HTTPException:
         raise
@@ -821,4 +827,4 @@ def update_company_name_service(
         )
 
 
-# -----------------------End Update Company name Service----------------------- #
+# -----------------------End Update Company Profile Details Service----------------------- #

@@ -52,5 +52,8 @@ class UploadUrlRequest(BaseModel):
     file_type: str
 
 
-class CompanyNameSchema(BaseModel):
+class CompanyProfileDetailsSchema(BaseModel):
     companyName: str
+    industryName: str
+    industryId: UUID
+    gstNo: Optional[str] = None
