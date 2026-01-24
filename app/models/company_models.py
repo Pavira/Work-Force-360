@@ -28,6 +28,7 @@ class CompanyModel(Base):
     auth_phone = Column(String, nullable=False)
 
     contact_person_name = Column(String, nullable=True)
+    contact_country_code = Column(String, nullable=True)
     contact_phone = Column(String, nullable=True)
     contact_email = Column(String, unique=True, nullable=True)
 

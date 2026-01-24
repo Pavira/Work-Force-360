@@ -18,6 +18,7 @@ class CompanyDocumentCreateSchema(BaseModel):
 
 class ContactInfoSchema(BaseModel):
     contactPersonName: Optional[str] = None
+    contactCountryCode: Optional[str] = None
     contactPersonPhone: Optional[str] = None
     contactEmail: Optional[str] = None
 

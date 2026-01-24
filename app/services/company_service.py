@@ -177,6 +177,22 @@ def update_contact_info_service(
                 detail="Company profile not found",
             )
 
+        # Check phone uniqueness across other companies
+        if contact_info.contactPersonPhone:
+            phone_exists = (
+                db.query(CompanyModel)
+                .filter(
+                    CompanyModel.contact_phone == contact_info.contactPersonPhone,
+                    CompanyModel.firebase_uid != firebase_uid,
+                )
+                .first()
+            )
+            if phone_exists:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Phone number already registered with another company",
+                )
+
         # Check email uniqueness across other companies
         if contact_info.contactEmail:
             email_exists = (
@@ -195,6 +211,7 @@ def update_contact_info_service(
 
         # Update fields (industry standard)
         company_profile.contact_person_name = contact_info.contactPersonName
+        company_profile.contact_country_code = contact_info.contactCountryCode
         company_profile.contact_phone = contact_info.contactPersonPhone
         company_profile.contact_email = contact_info.contactEmail
 
@@ -460,38 +477,38 @@ def generate_upload_url_service(
 
 
 # -----------------------Save Document Service----------------------- #
-def save_document_service(
-    payload: CompanyDocumentCreateSchema,
-    current_user: str,
-    db: Session,
-) -> CompanyDocumentModel:
-    try:
-        company = (
-            db.query(CompanyModel)
-            .filter(CompanyModel.firebase_uid == current_user)
-            .first()
-        )
-        if not company:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Company profile not found",
-            )
+# def save_document_service(
+#     payload: CompanyDocumentCreateSchema,
+#     current_user: str,
+#     db: Session,
+# ) -> CompanyDocumentModel:
+#     try:
+#         company = (
+#             db.query(CompanyModel)
+#             .filter(CompanyModel.firebase_uid == current_user)
+#             .first()
+#         )
+#         if not company:
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail="Company profile not found",
+#             )
 
-        document = CompanyDocumentModel(
-            company_id=company.id,
-            document_type=payload.documentType,
-            document_url=payload.documentUrl,
-        )
-        db.add(document)
-        db.flush()
-        return document
+#         document = CompanyDocumentModel(
+#             company_id=company.id,
+#             document_type=payload.documentType,
+#             document_url=payload.documentUrl,
+#         )
+#         db.add(document)
+#         db.flush()
+#         return document
 
-    except Exception as e:
-        print("DB ERROR 👉", e)  # or logger.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error saving document",
-        )
+#     except Exception as e:
+#         print("DB ERROR 👉", e)  # or logger.exception(e)
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail="Error saving document",
+#         )
 
 
 # -----------------------End Save Document Service----------------------- #
@@ -1018,3 +1035,82 @@ def get_company_documents_by_type_service(
 
 
 # -----------------------End Get Company Documents based on document type service----------------------- #
+
+
+# -----------------------Update Company Logo Service----------------------- #
+def update_company_logo_service(
+    logoUrl: str,
+    firebase_uid: str,
+    db: Session,
+) -> str:
+    try:
+        company_profile = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == firebase_uid)
+            .first()
+        )
+        if not company_profile:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
+        # Update logo URL
+        company_profile.logo_url = logoUrl
+        db.flush()
+        return company_profile
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating company logo",
+        )
+
+
+# -----------------------End Update Company Logo Service----------------------- #
+
+
+# -----------------------Update Company Document info based on document id----------------------- #
+def update_document_info_service(
+    document_id: str,
+    document_info: CompanyDocumentCreateSchema,
+    firebase_uid: str,
+    db: Session,
+) -> str:
+    try:
+        document = (
+            db.query(CompanyDocumentModel)
+            .filter(CompanyDocumentModel.id == document_id)
+            .first()
+        )
+
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company document not found",
+            )
+
+        # Update fields
+        if document_info.documentType is not None:
+            document.document_type = document_info.documentType
+
+        if document_info.documentUrl is not None:
+            document.document_url = document_info.documentUrl
+
+        db.flush()
+        return document
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating company document info",
+        )
+
+
+# -----------------------End Update Company Document info based on document id----------------------- #
