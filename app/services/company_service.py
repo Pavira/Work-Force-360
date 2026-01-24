@@ -835,7 +835,6 @@ def update_company_profile_details_service(
 # -----------------------Create Company Bank Details Service----------------------- #
 def create_company_bank_details_service(
     firebase_uid: str,
-    company_id: str,
     bank_details: CompanyBankDetailsSchema,
     db: Session,
 ) -> str:
@@ -853,7 +852,7 @@ def create_company_bank_details_service(
             )
 
         new_company_bank = CompanyBankDetailsModel(
-            company_id=company_id,
+            company_id=company.id,
             bank_name=bank_details.bankName,
             account_holder_name=bank_details.accountHolderName,
             account_number=bank_details.accountNumber,
@@ -881,7 +880,6 @@ def create_company_bank_details_service(
 # -----------------------Update Company Bank Details Service----------------------- #
 def update_company_bank_details_service(
     firebase_uid: str,
-    company_id: str,
     bank_details: CompanyBankDetailsSchema,
     db: Session,
 ) -> str:
@@ -900,7 +898,7 @@ def update_company_bank_details_service(
 
         company_bank = (
             db.query(CompanyBankDetailsModel)
-            .filter(CompanyBankDetailsModel.company_id == company_id)
+            .filter(CompanyBankDetailsModel.company_id == company.id)
             .first()
         )
 
@@ -935,13 +933,24 @@ def update_company_bank_details_service(
 # -----------------------Delete Company Bank Details Service----------------------- #
 def delete_company_bank_details_service(
     firebase_uid: str,
-    company_id: str,
     db: Session,
 ) -> str:
     try:
+        company = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
         company_bank = (
             db.query(CompanyBankDetailsModel)
-            .filter(CompanyBankDetailsModel.company_id == company_id)
+            .filter(CompanyBankDetailsModel.company_id == company.id)
             .first()
         )
 
@@ -963,3 +972,49 @@ def delete_company_bank_details_service(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error deleting company bank details",
         )
+
+
+# -----------------------End Delete Company Bank Details Service----------------------- #
+
+
+# -----------------------Get Company Documents based on document type service----------------------- #
+def get_company_documents_by_type_service(
+    firebase_uid: str,
+    document_type: str,
+    db: Session,
+) -> list[CompanyDocumentModel]:
+    try:
+        company = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
+        documents = (
+            db.query(CompanyDocumentModel)
+            .filter(
+                CompanyDocumentModel.company_id == company.id,
+                CompanyDocumentModel.document_type == document_type,
+            )
+            .all()
+        )
+
+        return documents
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching company documents by type",
+        )
+
+
+# -----------------------End Get Company Documents based on document type service----------------------- #

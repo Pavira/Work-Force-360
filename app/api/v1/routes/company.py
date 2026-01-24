@@ -30,6 +30,7 @@ from app.services.company_service import (
     get_all_address_details_service,
     get_all_company_details_service,
     get_all_documents_details_service,
+    get_company_documents_by_type_service,
     get_company_profile_service,
     get_document_service,
     get_terms_and_conditions,
@@ -606,14 +607,13 @@ def update_company_profile_details(
 
 # -----------------------Create Company Bank Details----------------------- #
 @router.post(
-    "/create_company_bank_details/{company_id}",
+    "/create_company_bank_details",
     status_code=status.HTTP_201_CREATED,
 )
 @limiter.limit("30/minute")
 def create_company_bank_details(
     request: Request,  # REQUIRED by SlowAPI
     bank_details: CompanyBankDetailsSchema,
-    company_id: str,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -621,7 +621,6 @@ def create_company_bank_details(
     Create company bank details (Firebase authenticated) .
     """
     bank_db = create_company_bank_details_service(
-        company_id=company_id,
         bank_details=bank_details,
         firebase_uid=current_user["uid"],
         db=db,
@@ -642,14 +641,13 @@ def create_company_bank_details(
 
 # -----------------------Update Company Bank Details----------------------- #
 @router.patch(
-    "/update_company_bank_details/{company_id}",
+    "/update_company_bank_details",
     status_code=status.HTTP_200_OK,
 )
 @limiter.limit("30/minute")
 def update_company_bank_details(
     request: Request,  # REQUIRED by SlowAPI
     bank_details: CompanyBankDetailsSchema,
-    company_id: str,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -657,7 +655,6 @@ def update_company_bank_details(
     Update company bank details (Firebase authenticated) .
     """
     bank_db = update_company_bank_details_service(
-        company_id=company_id,
         bank_details=bank_details,
         firebase_uid=current_user["uid"],
         db=db,
@@ -678,13 +675,12 @@ def update_company_bank_details(
 
 # -----------------------Delete Company Bank Details----------------------- #
 @router.delete(
-    "/delete_company_bank_details/{company_id}",
+    "/delete_company_bank_details",
     status_code=status.HTTP_200_OK,
 )
 @limiter.limit("30/minute")
 def delete_company_bank_details(
     request: Request,  # REQUIRED by SlowAPI
-    company_id: str,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -692,7 +688,6 @@ def delete_company_bank_details(
     Delete company bank details (Firebase authenticated) .
     """
     delete_status = delete_company_bank_details_service(
-        company_id=company_id,
         firebase_uid=current_user["uid"],
         db=db,
     )
@@ -701,5 +696,35 @@ def delete_company_bank_details(
         success=True,
         message="Company bank details deleted successfully",
         data={"deleted": delete_status},
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Delete Company Bank Details----------------------- #
+# -----------------------Get Company Documents based on document type----------------------- #
+@router.get(
+    "/get_company_documents/{document_type}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def get_company_documents(
+    request: Request,  # REQUIRED by SlowAPI
+    document_type: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Get company documents based on document type (Firebase authenticated) .
+    """
+    documents = get_company_documents_by_type_service(
+        document_type=document_type,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Company documents fetched successfully",
+        data={"documents": documents},
         code=status.HTTP_200_OK,
     )
