@@ -88,3 +88,24 @@ class CompanyDocumentModel(Base):
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     company = relationship("CompanyModel", back_populates="documents")
+
+
+class CompanyBankDetailsModel(Base):
+    __tablename__ = "company_bank_details"
+
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    company_id = Column(
+        UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True
+    )
+
+    bank_name = Column(String, nullable=True)
+    account_holder_name = Column(String, nullable=True)
+    account_number = Column(String, nullable=True)
+    ifsc_code = Column(String, nullable=True)
+    upi_id = Column(String, nullable=True)
+
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    company = relationship("CompanyModel", backref="bank_details")

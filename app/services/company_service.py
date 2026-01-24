@@ -4,12 +4,14 @@ from sqlalchemy.orm import Session, selectinload
 from fastapi import HTTPException, status
 
 from app.models.company_models import (
+    CompanyBankDetailsModel,
     CompanyModel,
     CompanyAddressModel,
     CompanyDocumentModel,
 )
 from app.schemas.company_schema import (
     CompanyAddressCreateSchema,
+    CompanyBankDetailsSchema,
     CompanyDocumentCreateSchema,
     CompanyInfoSchema,
     CompanyProfileDetailsSchema,
@@ -828,3 +830,136 @@ def update_company_profile_details_service(
 
 
 # -----------------------End Update Company Profile Details Service----------------------- #
+
+
+# -----------------------Create Company Bank Details Service----------------------- #
+def create_company_bank_details_service(
+    firebase_uid: str,
+    company_id: str,
+    bank_details: CompanyBankDetailsSchema,
+    db: Session,
+) -> str:
+    try:
+        company = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
+        new_company_bank = CompanyBankDetailsModel(
+            company_id=company_id,
+            bank_name=bank_details.bankName,
+            account_holder_name=bank_details.accountHolderName,
+            account_number=bank_details.accountNumber,
+            ifsc_code=bank_details.ifscCode,
+            upi_id=bank_details.upiId,
+        )
+        db.add(new_company_bank)
+        db.flush()
+
+        return company
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error creating company bank details",
+        )
+
+
+# -----------------------End Create Company Bank Details Service----------------------- #
+
+
+# -----------------------Update Company Bank Details Service----------------------- #
+def update_company_bank_details_service(
+    firebase_uid: str,
+    company_id: str,
+    bank_details: CompanyBankDetailsSchema,
+    db: Session,
+) -> str:
+    try:
+        company = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
+        company_bank = (
+            db.query(CompanyBankDetailsModel)
+            .filter(CompanyBankDetailsModel.company_id == company_id)
+            .first()
+        )
+
+        if not company_bank:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company bank details not found",
+            )
+
+        company_bank.bank_name = bank_details.bankName
+        company_bank.account_holder_name = bank_details.accountHolderName
+        company_bank.account_number = bank_details.accountNumber
+        company_bank.ifsc_code = bank_details.ifscCode
+        company_bank.upi_id = bank_details.upiId
+
+        db.flush()
+        return company
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating company bank details",
+        )
+
+
+# -----------------------End Update Company Bank Details Service----------------------- #
+
+
+# -----------------------Delete Company Bank Details Service----------------------- #
+def delete_company_bank_details_service(
+    firebase_uid: str,
+    company_id: str,
+    db: Session,
+) -> str:
+    try:
+        company_bank = (
+            db.query(CompanyBankDetailsModel)
+            .filter(CompanyBankDetailsModel.company_id == company_id)
+            .first()
+        )
+
+        if not company_bank:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company bank details not found",
+            )
+
+        db.delete(company_bank)
+        db.flush()
+        return company_bank
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error deleting company bank details",
+        )

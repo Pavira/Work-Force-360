@@ -8,6 +8,7 @@ from app.core.limiter import limiter
 from app.utils.response import custom_response
 from app.schemas.company_schema import (
     CompanyAddressCreateSchema,
+    CompanyBankDetailsSchema,
     CompanyDocumentCreateSchema,
     CompanyInfoSchema,
     CompanyProfileDetailsSchema,
@@ -19,8 +20,10 @@ from app.schemas.company_schema import (
 from app.services.company_service import (
     add_new_company_service,
     company_profile_exist_service,
+    create_company_bank_details_service,
     create_company_profile_service,
     delete_company_address_service,
+    delete_company_bank_details_service,
     delete_company_profile_service,
     delete_document_service,
     generate_upload_url_service,
@@ -32,6 +35,7 @@ from app.services.company_service import (
     get_terms_and_conditions,
     save_document_service,
     update_company_address_service,
+    update_company_bank_details_service,
     update_company_profile_details_service,
     # update_company_profile_service,
     update_contact_info_service,
@@ -598,3 +602,104 @@ def update_company_profile_details(
 
 
 # -----------------------End Update Profile Details----------------------- #
+
+
+# -----------------------Create Company Bank Details----------------------- #
+@router.post(
+    "/create_company_bank_details/{company_id}",
+    status_code=status.HTTP_201_CREATED,
+)
+@limiter.limit("30/minute")
+def create_company_bank_details(
+    request: Request,  # REQUIRED by SlowAPI
+    bank_details: CompanyBankDetailsSchema,
+    company_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Create company bank details (Firebase authenticated) .
+    """
+    bank_db = create_company_bank_details_service(
+        company_id=company_id,
+        bank_details=bank_details,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Company bank details created successfully",
+        data={
+            "id": bank_db.id,
+        },
+        code=status.HTTP_201_CREATED,
+    )
+
+
+# -----------------------End Create Company Bank Details----------------------- #
+
+
+# -----------------------Update Company Bank Details----------------------- #
+@router.patch(
+    "/update_company_bank_details/{company_id}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def update_company_bank_details(
+    request: Request,  # REQUIRED by SlowAPI
+    bank_details: CompanyBankDetailsSchema,
+    company_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Update company bank details (Firebase authenticated) .
+    """
+    bank_db = update_company_bank_details_service(
+        company_id=company_id,
+        bank_details=bank_details,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Company bank details updated successfully",
+        data={
+            "id": bank_db.id,
+        },
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Update Company Bank Details----------------------- #
+
+
+# -----------------------Delete Company Bank Details----------------------- #
+@router.delete(
+    "/delete_company_bank_details/{company_id}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def delete_company_bank_details(
+    request: Request,  # REQUIRED by SlowAPI
+    company_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Delete company bank details (Firebase authenticated) .
+    """
+    delete_status = delete_company_bank_details_service(
+        company_id=company_id,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Company bank details deleted successfully",
+        data={"deleted": delete_status},
+        code=status.HTTP_200_OK,
+    )

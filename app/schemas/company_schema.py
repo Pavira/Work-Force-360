@@ -57,3 +57,11 @@ class CompanyProfileDetailsSchema(BaseModel):
     industryName: str
     industryId: UUID
     gstNo: Optional[str] = None
+
+
+class CompanyBankDetailsSchema(BaseModel):
+    bankName: Optional[str] = None
+    accountHolderName: Optional[str] = None
+    accountNumber: Optional[str] = None
+    ifscCode: Optional[str] = None
+    upiId: Optional[str] = None
