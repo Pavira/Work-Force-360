@@ -259,7 +259,7 @@ def update_document_info_service(
                 )
             )
 
-        db.add(company_profile)
+        # db.add(company_profile)
         db.flush()
         return company_profile
 

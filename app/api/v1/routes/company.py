@@ -191,7 +191,7 @@ def update_document_info(
         success=True,
         message="Document info updated successfully",
         data={
-            # "id": company_db.id,
+            "id": company_db.id,
             # "company_name": company_db.company_person_name,
             # "status": company_db.status,
         },
@@ -736,7 +736,7 @@ def get_company_documents(
 
 # -----------------------Update Company Profile Logo----------------------- #
 @router.patch(
-    "/update_company_logo",
+    "/update_company_logo/{logo_url}",
     status_code=status.HTTP_200_OK,
 )
 @limiter.limit("30/minute")
