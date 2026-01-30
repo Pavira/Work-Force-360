@@ -1074,7 +1074,7 @@ def update_company_logo_service(
 
 
 # -----------------------Update Company Document info based on document id----------------------- #
-def update_document_info_service(
+def update_document_info_service_by_id(
     document_id: str,
     document_info: CompanyDocumentCreateSchema,
     firebase_uid: str,

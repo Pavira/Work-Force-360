@@ -42,6 +42,7 @@ from app.services.company_service import (
     # update_company_profile_service,
     update_contact_info_service,
     update_document_info_service,
+    update_document_info_service_by_id,
 )
 
 
@@ -784,7 +785,7 @@ def update_company_document(
     """
     Update company document info based on document id (Firebase authenticated) .
     """
-    document_db = update_document_info_service(
+    document_db = update_document_info_service_by_id(
         document_id=document_id,
         document_info=document_info,
         firebase_uid=current_user["uid"],
