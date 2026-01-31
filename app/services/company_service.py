@@ -1040,7 +1040,7 @@ def get_company_documents_by_type_service(
 
 # -----------------------Update Company Logo Service----------------------- #
 def update_company_logo_service(
-    logoUrl: LogoUpdateSchema,
+    logoUrl: str,
     firebase_uid: str,
     db: Session,
 ) -> str:

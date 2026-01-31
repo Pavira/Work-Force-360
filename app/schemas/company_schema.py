@@ -69,4 +69,4 @@ class CompanyBankDetailsSchema(BaseModel):
 
 
 class LogoUpdateSchema(BaseModel):
-    logo_url: str
+    logo_url: str | None = None

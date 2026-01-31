@@ -755,7 +755,7 @@ def update_company_logo(
     Update company profile logo (Firebase authenticated) .
     """
     company_db = update_company_logo_service(
-        logoUrl=logo_url,
+        logoUrl=logo_url.logo_url,
         firebase_uid=current_user["uid"],
         db=db,
     )
