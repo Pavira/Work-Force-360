@@ -18,6 +18,7 @@ from app.schemas.company_schema import (
     CompanyProfileUpdateSchema,
     ContactInfoSchema,
     DocumentInfoSchema,
+    LogoUpdateSchema,
 )
 
 
@@ -1039,7 +1040,7 @@ def get_company_documents_by_type_service(
 
 # -----------------------Update Company Logo Service----------------------- #
 def update_company_logo_service(
-    logoUrl: str,
+    logoUrl: LogoUpdateSchema,
     firebase_uid: str,
     db: Session,
 ) -> str:
