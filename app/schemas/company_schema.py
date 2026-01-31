@@ -66,3 +66,7 @@ class CompanyBankDetailsSchema(BaseModel):
     accountNumber: Optional[str] = None
     ifscCode: Optional[str] = None
     upiId: Optional[str] = None
+
+
+class LogoUpdateSchema(BaseModel):
+    logo_url: str

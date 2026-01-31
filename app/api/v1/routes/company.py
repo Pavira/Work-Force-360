@@ -1,5 +1,6 @@
 from uuid import UUID, uuid4
 from fastapi import APIRouter, Request, Response, status, Depends
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.firebase_auth import get_current_user
 from app.db.session import get_db
@@ -15,6 +16,7 @@ from app.schemas.company_schema import (
     # CompanyProfileUpdateSchema,
     ContactInfoSchema,
     DocumentInfoSchema,
+    LogoUpdateSchema,
     UploadUrlRequest,
 )
 from app.services.company_service import (
@@ -736,14 +738,16 @@ def get_company_documents(
 
 
 # -----------------------Update Company Profile Logo----------------------- #
+
+
 @router.patch(
-    "/update_company_logo/{logo_url}",
+    "/update_company_logo",
     status_code=status.HTTP_200_OK,
 )
 @limiter.limit("30/minute")
 def update_company_logo(
     request: Request,  # REQUIRED by SlowAPI
-    logo_url: str,
+    logo_url: LogoUpdateSchema,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):

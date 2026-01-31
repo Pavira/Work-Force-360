@@ -11,7 +11,10 @@ from datetime import datetime
 class LocationSchema(BaseModel):
     latitude: Optional[float] = Field(None, example=13.0827)
     longitude: Optional[float] = Field(None, example=80.2707)
-    address: Optional[str] = Field(None, example="123, Anna Nagar, Chennai, Tamil Nadu")
+    workAddress: Optional[str] = Field(
+        None, example="123, Anna Nagar, Chennai, Tamil Nadu"
+    )
+    nearbyLandmark: Optional[str] = Field(None, example="Near Anna Nagar Tower Park")
 
 
 class ContactSchema(BaseModel):
@@ -27,8 +30,6 @@ class ContactSchema(BaseModel):
 
 class JobPostingSchema(BaseModel):
     # Basic info
-    jobId: Optional[str] = Field(None, example="JOB123456")
-    createdBy: str = Field(..., example="EMPLOYER001")
     skillCategory: Optional[str] = Field(None, example="Electrical")
     subCategory: Optional[str] = Field(None, example="Wiring")
     industryType: Optional[str] = Field(None, example="Construction")
@@ -36,6 +37,9 @@ class JobPostingSchema(BaseModel):
     description: Optional[str] = Field(
         None, example="Need an experienced electrician for 3 days site work"
     )
+
+    # Location
+    location: Optional[LocationSchema] = None
 
     # Timing
     startDate: Optional[str] = Field(None, example="2025-11-10")
@@ -46,42 +50,24 @@ class JobPostingSchema(BaseModel):
     durationType: Optional[str] = Field(None, example="Days")
     shift: Optional[str] = Field(None, example="Morning")
 
-    # Location
-    location: Optional[LocationSchema] = None
-
-    # Payment
-    wageType: str = Field(..., example="Daily")  # e.g., Hourly, Daily, Monthly
-    wage: int = Field(..., example=600)
-    expectedTotal: int = Field(..., example=1800)
-    paymentTerms: str = Field(..., example="Full payment after job completion")
-
     # Workforce
     workers: int = Field(..., example=5)
     experienceRequired: Optional[str] = Field(
         None, example="2+ years in wiring and maintenance"
     )
 
-    # Job Rules
-    uniformRequired: bool = Field(..., example=True)
-    uniformDetails: Optional[str] = Field(
-        None, example="Blue overalls and safety shoes mandatory"
-    )
-    toolProvided: bool = Field(..., example=False)
-    toolDetails: Optional[str] = Field(
-        None, example="Workers should bring their own tools"
-    )
-    languagePreference: Optional[str] = Field(None, example="Tamil, English")
-    specialInstructions: Optional[str] = Field(
-        None, example="Report at main gate by 8:45 AM"
-    )
+    # Payment
+    wage: int = Field(..., example=600)
+    expectedTotal: int = Field(..., example=1800)
 
     # Contact
     contact: ContactSchema
 
-    # System fields
-    status: str = Field(..., example="Open")  # e.g., Open, Assigned, Closed
-    createdAt: Optional[datetime] = Field(
-        default_factory=datetime.utcnow, example="2025-11-06T06:45:12.000Z"
+    # Job Rules
+    languagePreference: Optional[str] = Field(None, example="Tamil, English")
+    toolProvided: bool = Field(..., example=False)
+    specialInstructions: Optional[str] = Field(
+        None, example="Report at main gate by 8:45 AM"
     )
 
 
