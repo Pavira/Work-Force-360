@@ -41,63 +41,73 @@ def get_company_profile_service(
     firebase_uid: str,
     db: Session,
 ) -> dict:
-
-    company = (
-        db.query(CompanyModel)
-        .options(
-            selectinload(CompanyModel.bank_details),
-            selectinload(CompanyModel.addresses),
-            selectinload(CompanyModel.documents),
+    try:
+        company = (
+            db.query(CompanyModel)
+            .options(
+                selectinload(CompanyModel.addresses),
+                selectinload(CompanyModel.documents),
+                selectinload(CompanyModel.bank_details),
+            )
+            .filter(CompanyModel.firebase_uid == firebase_uid)
+            .first()
         )
-        .filter(CompanyModel.firebase_uid == firebase_uid)
-        .first()
-    )
 
-    if not company:
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
+        return {
+            "id": company.id,
+            "firebase_uid": company.firebase_uid,
+            "company_name": company.company_name,
+            "industry_id": company.industry_id,
+            "industry_name": company.industry_name,
+            "gst_number": company.gst_number,
+            "auth_phone": company.auth_phone,
+            "contact_person_name": company.contact_person_name,
+            "contact_phone": company.contact_phone,
+            "contact_email": company.contact_email,
+            "logo_url": company.logo_url,
+            "status": company.status,
+            "is_verified": company.is_verified,
+            "is_active": company.is_active,
+            "addresses": [
+                {
+                    "id": addr.id,
+                    "address": addr.address,
+                    "unit_name": addr.unit_name,
+                    "city": addr.city,
+                    "state": addr.state,
+                    "pincode": addr.pincode,
+                }
+                for addr in company.addresses
+            ],
+            "bank_details": [
+                {
+                    "bank_name": bank.bank_name,
+                    "account_holder_name": bank.account_holder_name,
+                    "account_number": bank.account_number,
+                    "ifsc_code": bank.ifsc_code,
+                    "upi_id": bank.upi_id,
+                }
+                for bank in company.bank_details
+            ],
+            "created_at": company.created_at,
+            "updated_at": company.updated_at,
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        print("DB ERROR 👉", e)
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Company profile not found",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching company profile",
         )
-
-    return {
-        "id": company.id,
-        "firebase_uid": company.firebase_uid,
-        "company_name": company.company_name,
-        "industry_id": company.industry_id,
-        "industry_name": company.industry_name,
-        "gst_number": company.gst_number,
-        "auth_phone": company.auth_phone,
-        "contact_person_name": company.contact_person_name,
-        "contact_phone": company.contact_phone,
-        "contact_email": company.contact_email,
-        "logo_url": company.logo_url,
-        "status": company.status,
-        "is_verified": company.is_verified,
-        "is_active": company.is_active,
-        "addresses": [
-            {
-                "id": addr.id,
-                "address": addr.address,
-                "unit_name": addr.unit_name,
-                "city": addr.city,
-                "state": addr.state,
-                "pincode": addr.pincode,
-            }
-            for addr in company.addresses
-        ],
-        "bank_details": [
-            {
-                "bank_name": bank.bank_details.bank_name,
-                "account_holder_name": bank.bank_details.account_holder_name,
-                "account_number": bank.bank_details.account_number,
-                "ifsc_code": bank.bank_details.ifsc_code,
-                "upi_id": bank.bank_details.upi_id,
-            }
-            for bank in company.bank_details
-        ],
-        "created_at": company.created_at,
-        "updated_at": company.updated_at,
-    }
 
 
 # -----------------------End Get Company Profile Service ----------------------- #
