@@ -45,6 +45,7 @@ def get_company_profile_service(
     company = (
         db.query(CompanyModel)
         .options(
+            selectinload(CompanyModel.bank_details),
             selectinload(CompanyModel.addresses),
             selectinload(CompanyModel.documents),
         )
@@ -57,22 +58,6 @@ def get_company_profile_service(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Company profile not found",
         )
-
-    # Extract profile image from documents
-    # profile_image = None
-    # other_documents = []
-
-    # for doc in company.documents:
-    #     if doc.document_type == "profile_image":
-    #         profile_image = doc.document_url
-    # else:
-    #     other_documents.append(
-    #         {
-    #             "id": doc.id,
-    #             "document_type": doc.document_type,
-    #             "document_url": doc.document_url,
-    #         }
-    #     )
 
     return {
         "id": company.id,
@@ -99,6 +84,16 @@ def get_company_profile_service(
                 "pincode": addr.pincode,
             }
             for addr in company.addresses
+        ],
+        "bank_details": [
+            {
+                "bank_name": bank.bank_details.bank_name,
+                "account_holder_name": bank.bank_details.account_holder_name,
+                "account_number": bank.bank_details.account_number,
+                "ifsc_code": bank.bank_details.ifsc_code,
+                "upi_id": bank.bank_details.upi_id,
+            }
+            for bank in company.bank_details
         ],
         "created_at": company.created_at,
         "updated_at": company.updated_at,
