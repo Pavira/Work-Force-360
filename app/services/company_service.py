@@ -759,6 +759,10 @@ def delete_company_profile_service(
             CompanyDocumentModel.company_id == company.id
         ).delete()
 
+        db.query(CompanyBankDetailsModel).filter(
+            CompanyBankDetailsModel.company_id == company.id
+        ).delete()
+
         db.delete(company)
         db.flush()
 
