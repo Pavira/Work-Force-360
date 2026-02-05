@@ -624,6 +624,8 @@ def update_company_address_service(
         company_address.city = new_address.city
         company_address.state = new_address.state
         company_address.pincode = new_address.pincode
+        company_address.latitude = new_address.latitude
+        company_address.longitude = new_address.longitude
 
         db.flush()
         return company_address
@@ -667,6 +669,8 @@ def add_new_company_service(
             city=new_address.city,
             state=new_address.state,
             pincode=new_address.pincode,
+            latitude=new_address.latitude,
+            longitude=new_address.longitude,
         )
         db.add(new_company_address)
         db.flush()
