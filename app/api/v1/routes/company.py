@@ -20,6 +20,7 @@ from app.schemas.company_schema import (
     UploadUrlRequest,
 )
 from app.services.company_service import (
+    add_document_against_company_id_and_type_service,
     add_new_company_service,
     company_profile_exist_service,
     create_company_bank_details_service,
