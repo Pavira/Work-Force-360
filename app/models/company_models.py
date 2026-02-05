@@ -67,6 +67,8 @@ class CompanyAddressModel(Base):
     city = Column(String, nullable=False)
     state = Column(String, nullable=False)
     pincode = Column(String, nullable=False)
+    latitude = Column(String, nullable=False)
+    longitude = Column(String, nullable=False)
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 

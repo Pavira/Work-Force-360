@@ -9,6 +9,8 @@ class CompanyAddressCreateSchema(BaseModel):
     city: str
     state: str
     pincode: str
+    latitude: str
+    longitude: str
 
 
 class CompanyDocumentCreateSchema(BaseModel):

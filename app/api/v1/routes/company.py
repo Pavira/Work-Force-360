@@ -1,5 +1,5 @@
 from uuid import UUID, uuid4
-from fastapi import APIRouter, Request, Response, status, Depends
+from fastapi import APIRouter, Query, Request, Response, status, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.firebase_auth import get_current_user
@@ -807,3 +807,34 @@ def update_company_document(
 
 
 # -----------------------End Update Company Document info based on document Id----------------------- #
+
+
+# -----------------------Add more documents against company id & document type----------------------- #
+@router.post(
+    "/add_documents_against_company_id_and_type",
+    status_code=status.HTTP_201_CREATED,
+)
+@limiter.limit("30/minute")
+def add_documents_against_company_id_and_type(
+    request: Request,  # REQUIRED by SlowAPI
+    document_info: CompanyDocumentCreateSchema,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Add more documents against company id & document type (Firebase authenticated) .
+    """
+    document_db = add_document_against_company_id_and_type_service(
+        document_info=document_info,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Company document added successfully",
+        data={
+            "id": document_db.id,
+        },
+        code=status.HTTP_201_CREATED,
+    )

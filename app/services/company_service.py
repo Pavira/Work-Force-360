@@ -1124,3 +1124,37 @@ def update_document_info_service_by_id(
 
 
 # -----------------------End Update Company Document info based on document id----------------------- #
+
+
+# -----------------------Add more documents against company id & document type service----------------------- #
+def add_document_against_company_id_and_type_service(
+    firebase_uid: str, db: Session, document_info: CompanyDocumentCreateSchema
+):
+    try:
+        company = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
+        document = CompanyDocumentModel(
+            **document_info.model_dump(), company_id=company.id
+        )
+        db.add(document)
+        db.flush()
+        return document
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error adding document against company id and type",
+        )
