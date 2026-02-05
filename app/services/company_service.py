@@ -82,6 +82,8 @@ def get_company_profile_service(
                     "city": addr.city,
                     "state": addr.state,
                     "pincode": addr.pincode,
+                    "latitude": addr.latitude,
+                    "longitude": addr.longitude,
                 }
                 for addr in company.addresses
             ],
@@ -146,6 +148,8 @@ def create_company_profile_service(
                     city=addr.city,
                     state=addr.state,
                     pincode=addr.pincode,
+                    latitude=addr.latitude,
+                    longitude=addr.longitude,
                 )
             )
 
@@ -329,6 +333,8 @@ def update_company_profile_service(
                         city=addr["city"],
                         state=addr["state"],
                         pincode=addr["pincode"],
+                        latitude=addr["latitude"],
+                        longitude=addr["longitude"],
                     )
                 )
         # Contact Info update
