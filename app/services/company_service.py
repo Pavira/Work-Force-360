@@ -1144,7 +1144,9 @@ def add_document_against_company_id_and_type_service(
             )
 
         document = CompanyDocumentModel(
-            **document_info.model_dump(), company_id=company.id
+            document_type=document_info.documentType,
+            document_url=document_info.documentUrl,
+            company_id=company.id,
         )
         db.add(document)
         db.flush()
