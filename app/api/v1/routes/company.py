@@ -22,6 +22,7 @@ from app.schemas.company_schema import (
 from app.services.company_service import (
     add_document_against_company_id_and_type_service,
     add_new_company_service,
+    company_name_and_status_service,
     company_profile_exist_service,
     create_company_bank_details_service,
     create_company_profile_service,
@@ -838,4 +839,45 @@ def add_documents_against_company_id_and_type(
             "id": document_db.id,
         },
         code=status.HTTP_201_CREATED,
+    )
+
+
+# -----------------------End Add more documents against company id & document type----------------------- #
+
+
+# -----------------------Get Company Name and Status----------------------- #
+@router.get(
+    "/get_company_name_and_status",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("100/minute")
+def get_company_name_and_status(
+    request: Request,  # REQUIRED by SlowAPI
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Get company name and status (Firebase authenticated).
+    """
+    company = company_name_and_status_service(
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    if not company:
+        return custom_response(
+            success=True,
+            message="Company profile not found",
+            data={},
+            code=status.HTTP_404_NOT_FOUND,
+        )
+
+    return custom_response(
+        success=True,
+        message="Company profile found",
+        data={
+            "company_name": company.company_name,
+            "status": company.status,
+        },
+        code=status.HTTP_200_OK,
     )

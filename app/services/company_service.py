@@ -1170,3 +1170,39 @@ def add_document_against_company_id_and_type_service(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error adding document against company id and type",
         )
+
+
+# -----------------------End Add more documents against company id & document type service----------------------- #
+
+
+# -----------------------Get company name and status Service----------------------- #
+def company_name_and_status_service(
+    firebase_uid: str,
+    db: Session,
+) -> dict:
+    try:
+        company = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
+        return {
+            "companyName": company.company_name,
+            "status": company.status,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching company name and status",
+        )
