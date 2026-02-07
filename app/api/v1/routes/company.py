@@ -864,20 +864,12 @@ def get_company_name_and_status(
         db=db,
     )
 
-    if not company:
-        return custom_response(
-            success=True,
-            message="Company profile not found",
-            data={},
-            code=status.HTTP_404_NOT_FOUND,
-        )
-
     return custom_response(
         success=True,
         message="Company profile found",
         data={
-            "company_name": company.company_name,
-            "status": company.status,
+            "company_name": company["company_name"],
+            "status": company["status"],
         },
         code=status.HTTP_200_OK,
     )
