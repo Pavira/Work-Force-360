@@ -35,7 +35,7 @@ def verify_firebase_token(token: str) -> dict:
         initialize_firebase()  # ✅ CRITICAL FIX
         # return auth.verify_id_token(token)
         decoded_token = auth.verify_id_token(token)
-        print("🔥 Firebase decoded token:", decoded_token)
+        print("🔥 Firebase  token:", token)
         return decoded_token
 
     except auth.ExpiredIdTokenError:

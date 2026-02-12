@@ -10,9 +10,15 @@ from datetime import date, datetime, time
 
 class JobPostingSchema(BaseModel):
     # Basic info
-    skillCategoryId: Optional[str] = Field(None, example="SC123456")
-    subCategoryId: Optional[str] = Field(None, example="SUBSC123456")
-    industryTypeId: Optional[str] = Field(None, example="IT123456")
+    skillCategoryId: Optional[str] = Field(
+        None, example="f029fa9f-0c44-40e0-a426-774c80e44db2"
+    )
+    subCategoryId: Optional[str] = Field(
+        None, example="f029fa9f-0c44-40e0-a426-774c80e44db2"
+    )
+    industryTypeId: Optional[str] = Field(
+        None, example="f029fa9f-0c44-40e0-a426-774c80e44db2"
+    )
     tier: Optional[int] = Field(None, example=1)
     description: Optional[str] = Field(
         None, example="Need an experienced electrician for 3 days site work"
