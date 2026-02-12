@@ -1,4 +1,7 @@
+import traceback
+
 from fastapi import APIRouter, Depends, Request, status
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.firebase_auth import get_current_user
@@ -28,8 +31,18 @@ def create_job_post(
     """
     Create a new job post.
     """
-
-    job = create_job_post_service(payload=payload, db=db)
+    try:
+        job = create_job_post_service(payload=payload, db=db)
+    except HTTPException as e:
+        print("create_job_post HTTPException:", e.detail)
+        print("create_job_post payload:", payload.model_dump())
+        traceback.print_exc()
+        raise
+    except Exception as e:
+        print("create_job_post unexpected error:", str(e))
+        print("create_job_post payload:", payload.model_dump())
+        traceback.print_exc()
+        raise
 
     return custom_response(
         success=True,

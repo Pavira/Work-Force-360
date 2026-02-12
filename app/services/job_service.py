@@ -1,20 +1,17 @@
+import traceback
+from uuid import UUID
+
 from fastapi import HTTPException, status
-from geoalchemy2.shape import from_shape
+from geoalchemy2.shape import from_shape, to_shape
 from shapely.geometry import Point
 from sqlalchemy.orm import Session
 
-from app.models.industry_skill_models import (
-    CategorySkillModel,
-    IndustryTypeModel,
-    SubCategorySkillModel,
-)
 from app.models.job_model import JobPostingModel
 from app.schemas.job_schema import JobPostingSchema
 
 
 def create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
     try:
-
         location = from_shape(
             Point(payload.longitude, payload.latitude),  # lng, lat order
             srid=4326,
@@ -49,12 +46,16 @@ def create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
         )
         db.add(job)
         db.flush()
-        return job
+
+        return {
+            "id": str(job.id),
+        }
 
     except HTTPException:
         raise
     except Exception as e:
-        print("DB ERROR 👉", e)  # or logger.exception(e)
+        print("create_job_post_service DB ERROR:", str(e))
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error creating job post",
@@ -72,7 +73,8 @@ def get_all_job_posts_service(db: Session) -> list:
         )
         return job_posts
     except Exception as e:
-        print("DB ERROR 👉", e)  # or logger.exception(e)
+        print("get_all_job_posts_service DB ERROR:", str(e))
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error retrieving job posts",
@@ -83,13 +85,21 @@ def get_all_job_posts_service(db: Session) -> list:
 
 
 # ------------------------GET Job Post By ID Service ------------------------
-def get_job_post_by_id_service(job_id: str, db: Session) -> JobPostingModel:
+def get_job_post_by_id_service(job_id: str, db: Session) -> dict:
     try:
+        try:
+            parsed_job_id = UUID(job_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid job_id format",
+            )
+
         job_post = (
             db.query(JobPostingModel)
             .filter(
-                JobPostingModel.id == job_id,
-                JobPostingModel.is_active == True,
+                JobPostingModel.id == parsed_job_id,
+                JobPostingModel.is_active == True,  # noqa: E712
             )
             .first()
         )
@@ -97,11 +107,54 @@ def get_job_post_by_id_service(job_id: str, db: Session) -> JobPostingModel:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Job post not found"
             )
-        return job_post
+
+        point = to_shape(job_post.location) if job_post.location else None
+        return {
+            "id": str(job_post.id),
+            "skillCategoryId": str(job_post.skill_category_id),
+            "subCategoryId": (
+                str(job_post.sub_category_id) if job_post.sub_category_id else None
+            ),
+            "industryTypeId": (
+                str(job_post.industry_type_id) if job_post.industry_type_id else None
+            ),
+            "tier": job_post.tier,
+            "description": job_post.description,
+            "latitude": point.y if point else None,
+            "longitude": point.x if point else None,
+            "workAddress": job_post.work_address,
+            "nearbyLandmark": job_post.nearby_landmark,
+            "scheduledStartDateTime": job_post.scheduled_start_datetime,
+            "scheduledEndDateTime": job_post.scheduled_end_datetime,
+            "scheduledDuration": job_post.scheduled_duration,
+            "durationType": job_post.duration_type,
+            "shift": job_post.shift,
+            "workers": job_post.workers,
+            "experienceRequired": job_post.experience_required,
+            "wage": job_post.wage,
+            "expectedTotal": job_post.expected_total,
+            "name": job_post.name,
+            "countryCode": job_post.country_code,
+            "phoneNumber": job_post.phone_number,
+            "email": job_post.email,
+            "languagePreference": job_post.language_preference,
+            "toolProvided": job_post.tool_provided,
+            "toolDetails": job_post.tool_details,
+            "specialInstructions": job_post.special_instructions,
+            "status": job_post.status,
+            "postedAt": job_post.posted_at,
+            "assignedAt": job_post.assigned_at,
+            "startedAt": job_post.started_at,
+            "completedAt": job_post.completed_at,
+            "cancelledAt": job_post.cancelled_at,
+            "createdAt": job_post.created_at,
+            "updatedAt": job_post.updated_at,
+        }
     except HTTPException:
         raise
     except Exception as e:
-        print("DB ERROR 👉", e)  # or logger.exception(e)
+        print("get_job_post_by_id_service DB ERROR:", str(e))
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error retrieving job post",
