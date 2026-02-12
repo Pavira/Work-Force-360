@@ -1195,6 +1195,7 @@ def company_name_and_status_service(
 
         return {
             "companyName": company.company_name,
+            "logoUrl": company.logo_url,
             "status": company.status,
         }
 

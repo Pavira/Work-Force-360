@@ -869,6 +869,7 @@ def get_company_name_and_status(
         message="Company profile found",
         data={
             "company_name": company["companyName"],
+            "logo_url": company["logoUrl"],
             "status": company["status"],
         },
         code=status.HTTP_200_OK,

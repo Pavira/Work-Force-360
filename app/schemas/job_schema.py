@@ -1,30 +1,10 @@
 from pydantic import BaseModel, Field, HttpUrl
 from typing import Optional
-from datetime import datetime
+from datetime import date, datetime, time
 
 
 # ------------------------
-# SubSchemas
-# ------------------------
-
-
-class LocationSchema(BaseModel):
-    latitude: Optional[float] = Field(None, example=13.0827)
-    longitude: Optional[float] = Field(None, example=80.2707)
-    workAddress: Optional[str] = Field(
-        None, example="123, Anna Nagar, Chennai, Tamil Nadu"
-    )
-    nearbyLandmark: Optional[str] = Field(None, example="Near Anna Nagar Tower Park")
-
-
-class ContactSchema(BaseModel):
-    name: Optional[str] = Field(None, example="Suresh Kumar")
-    phoneNumber: Optional[str] = Field(None, example="+919876543210")
-    email: Optional[str] = Field(None, example="suresh@example.com")
-
-
-# ------------------------
-# Main Schema
+# Job Post Schema
 # ------------------------
 
 
@@ -39,33 +19,42 @@ class JobPostingSchema(BaseModel):
     )
 
     # Location
-    location: Optional[LocationSchema] = None
+    latitude: Optional[float] = Field(None, example=13.0827)
+    longitude: Optional[float] = Field(None, example=80.2707)
+    workAddress: Optional[str] = Field(
+        None, example="123, Anna Nagar, Chennai, Tamil Nadu"
+    )
+    nearbyLandmark: Optional[str] = Field(None, example="Near Anna Nagar Tower Park")
 
     # Timing
-    startDate: Optional[str] = Field(None, example="2025-11-10")
-    startTime: Optional[str] = Field(None, example="09:00 AM")
-    endDate: Optional[str] = Field(None, example="2025-11-13")
-    endTime: Optional[str] = Field(None, example="05:00 PM")
+    startDate: Optional[date] = Field(None, example="2025-11-10")
+    startTime: Optional[time] = Field(None, example="09:00 AM")
+    endDate: Optional[date] = Field(None, example="2025-11-13")
+    endTime: Optional[time] = Field(None, example="05:00 PM")
     duration: Optional[str] = Field(None, example="3")
-    durationType: Optional[str] = Field(None, example="Days")
-    shift: Optional[str] = Field(None, example="Morning")
+    durationType: Optional[str] = Field(None, example="hours/days")
+    shift: Optional[str] = Field(None, example="Day/Night/Rotational")
 
     # Workforce
     workers: int = Field(..., example=5)
-    experienceRequired: Optional[str] = Field(
-        None, example="2+ years in wiring and maintenance"
-    )
+    experienceRequired: Optional[str] = Field(None, example="2+ years")
 
     # Payment
     wage: int = Field(..., example=600)
     expectedTotal: int = Field(..., example=1800)
 
     # Contact
-    contact: ContactSchema
+    name: Optional[str] = Field(None, example="Suresh Kumar")
+    countryCode: Optional[str] = Field(None, example="+91")
+    phoneNumber: Optional[str] = Field(None, example="+919876543210")
+    email: Optional[str] = Field(None, example="suresh@example.com")
 
     # Job Rules
     languagePreference: Optional[str] = Field(None, example="Tamil, English")
     toolProvided: bool = Field(..., example=False)
+    toolDetails: Optional[str] = Field(
+        None, example="Company will not provide any tools"
+    )
     specialInstructions: Optional[str] = Field(
         None, example="Report at main gate by 8:45 AM"
     )
