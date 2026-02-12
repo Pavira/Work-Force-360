@@ -88,7 +88,7 @@ def get_job_post_by_id_service(job_id: str, db: Session) -> JobPostingModel:
         job_post = (
             db.query(JobPostingModel)
             .filter(
-                JobPostingModel.id == UUID(job_id),
+                JobPostingModel.id == job_id,
                 JobPostingModel.is_active == True,
             )
             .first()
