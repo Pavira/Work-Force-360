@@ -22,6 +22,8 @@ class IndustryTypeModel(Base):
     name = Column(String(150), nullable=False, unique=True)
     # description = Column(String(255), nullable=True)
 
+    tier = Column(String(50), nullable=True)  # e.g., Tier 1, Tier 2, etc.
+
     is_active = Column(Boolean, server_default=text("true"))
     # is_deleted = Column(Boolean, default=False)
 
@@ -29,6 +31,9 @@ class IndustryTypeModel(Base):
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+# alembic upgrade head
 
 
 class CategorySkillModel(Base):
@@ -43,6 +48,7 @@ class CategorySkillModel(Base):
         nullable=False,
     )
 
+    tier = Column(ForeignKey("industry_types.tier"), nullable=True)
     name = Column(String(150), nullable=False)
     # description = Column(String(255), nullable=True)
 

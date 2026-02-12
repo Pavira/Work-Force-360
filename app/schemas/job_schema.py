@@ -10,9 +10,9 @@ from datetime import date, datetime, time
 
 class JobPostingSchema(BaseModel):
     # Basic info
-    skillCategory: Optional[str] = Field(None, example="Electrical")
-    subCategory: Optional[str] = Field(None, example="Wiring")
-    industryType: Optional[str] = Field(None, example="Construction")
+    skillCategoryId: Optional[str] = Field(None, example="SC123456")
+    subCategoryId: Optional[str] = Field(None, example="SUBSC123456")
+    industryTypeId: Optional[str] = Field(None, example="IT123456")
     tier: Optional[int] = Field(None, example=1)
     description: Optional[str] = Field(
         None, example="Need an experienced electrician for 3 days site work"
@@ -26,12 +26,10 @@ class JobPostingSchema(BaseModel):
     )
     nearbyLandmark: Optional[str] = Field(None, example="Near Anna Nagar Tower Park")
 
-    # Timing
-    startDate: Optional[date] = Field(None, example="2025-11-10")
-    startTime: Optional[time] = Field(None, example="09:00 AM")
-    endDate: Optional[date] = Field(None, example="2025-11-13")
-    endTime: Optional[time] = Field(None, example="05:00 PM")
-    duration: Optional[str] = Field(None, example="3")
+    # -------- Timing (Timezone Aware) --------
+    scheduledStartDateTime: datetime = Field(..., example="2026-02-15T09:00:00+05:30")
+    scheduledEndDateTime: datetime = Field(..., example="2026-02-15T18:00:00+05:30")
+    scheduledDuration: Optional[str] = Field(None, example="3")
     durationType: Optional[str] = Field(None, example="hours/days")
     shift: Optional[str] = Field(None, example="Day/Night/Rotational")
 

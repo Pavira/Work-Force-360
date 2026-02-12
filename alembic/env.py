@@ -23,6 +23,12 @@ if not DATABASE_URL:
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 
+def include_object(object, name, type_, reflected, compare_to):
+    if type_ == "table" and name == "spatial_ref_sys":
+        return False
+    return True
+
+
 def run_migrations_offline() -> None:
     context.configure(
         url=DATABASE_URL,
@@ -43,7 +49,11 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=include_object,
+        )
 
         with context.begin_transaction():
             context.run_migrations()

@@ -21,6 +21,9 @@ from app.schemas.company_schema import (
     LogoUpdateSchema,
 )
 
+from geoalchemy2.shape import from_shape, to_shape
+from shapely.geometry import Point
+
 
 # -----------------------Company profile exist or not Service ----------------------- #
 def company_profile_exist_service(
@@ -82,8 +85,8 @@ def get_company_profile_service(
                     "city": addr.city,
                     "state": addr.state,
                     "pincode": addr.pincode,
-                    "latitude": addr.latitude,
-                    "longitude": addr.longitude,
+                    "latitude": (to_shape(addr.location).y if addr.location else None),
+                    "longitude": (to_shape(addr.location).x if addr.location else None),
                 }
                 for addr in company.addresses
             ],
@@ -140,6 +143,10 @@ def create_company_profile_service(
         db.add(company_db)
         db.flush()
         for addr in company.addresses:
+            location = from_shape(
+                Point(addr.longitude, addr.latitude),  # IMPORTANT: lng, lat order
+                srid=4326,
+            )
             db.add(
                 CompanyAddressModel(
                     company_id=company_db.id,
@@ -148,8 +155,7 @@ def create_company_profile_service(
                     city=addr.city,
                     state=addr.state,
                     pincode=addr.pincode,
-                    latitude=addr.latitude,
-                    longitude=addr.longitude,
+                    location=location,  # Store as PostGIS geometry
                 )
             )
 
@@ -287,114 +293,119 @@ def update_document_info_service(
 
 
 # -----------------------Update Company Profile Service----------------------- #
-def update_company_profile_service(
-    update: CompanyProfileUpdateSchema,
-    firebase_uid: str,
-    db: Session,
-) -> CompanyModel:
-    try:
+# def update_company_profile_service(
+#     update: CompanyProfileUpdateSchema,
+#     firebase_uid: str,
+#     db: Session,
+# ) -> CompanyModel:
+#     try:
 
-        company = (
-            db.query(CompanyModel)
-            .filter(CompanyModel.firebase_uid == firebase_uid)
-            .first()
-        )
+#         company = (
+#             db.query(CompanyModel)
+#             .filter(CompanyModel.firebase_uid == firebase_uid)
+#             .first()
+#         )
 
-        if not company:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Company profile not found",
-            )
+#         if not company:
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail="Company profile not found",
+#             )
 
-        data = update.model_dump(exclude_unset=True)
+#         data = update.model_dump(exclude_unset=True)
 
-        # Simple field updates
-        if "companyName" in data:
-            company.company_name = data["companyName"]
+#         # Simple field updates
+#         if "companyName" in data:
+#             company.company_name = data["companyName"]
 
-        if "industryType" in data:
-            company.industry = data["industryType"]
+#         if "industryType" in data:
+#             company.industry = data["industryType"]
 
-        if "gstNo" in data:
-            company.gst_number = data["gstNo"]
+#         if "gstNo" in data:
+#             company.gst_number = data["gstNo"]
 
-        # Address update (replace strategy)
-        if "addresses" in data:
-            db.query(CompanyAddressModel).filter(
-                CompanyAddressModel.company_id == company.id
-            ).delete(synchronize_session=False)
+#         # Address update (replace strategy)
+#         if "addresses" in data:
+#             db.query(CompanyAddressModel).filter(
+#                 CompanyAddressModel.company_id == company.id
+#             ).delete(synchronize_session=False)
 
-            for addr in data["addresses"]:
-                db.add(
-                    CompanyAddressModel(
-                        company_id=company.id,
-                        address=addr["address"],
-                        unit_name=addr["unitName"],
-                        city=addr["city"],
-                        state=addr["state"],
-                        pincode=addr["pincode"],
-                        latitude=addr["latitude"],
-                        longitude=addr["longitude"],
-                    )
-                )
-        # Contact Info update
-        if "contactInfo" in data:
-            ci = data["contactInfo"]
+#             for addr in data["addresses"]:
+#                 location = from_shape(
+#                     Point(
+#                         addr["longitude"], addr["latitude"]
+#                     ),  # IMPORTANT: lng, lat order
+#                     srid=4326,
+#                 )
+#                 db.add(
+#                     CompanyAddressModel(
+#                         company_id=company.id,
+#                         address=addr["address"],
+#                         unit_name=addr["unitName"],
+#                         city=addr["city"],
+#                         state=addr["state"],
+#                         pincode=addr["pincode"],
+#                         location=location,  # Store as PostGIS geometry
+#                     )
+#                 )
+#         # Contact Info update
+#         if "contactInfo" in data:
+#             ci = data["contactInfo"]
 
-            if "contactPersonName" in ci:
-                company.contact_person_name = ci["contactPersonName"]
+#             if "contactPersonName" in ci:
+#                 company.contact_person_name = ci["contactPersonName"]
 
-            if "contactPersonPhone" in ci:
-                company.contact_phone = ci["contactPersonPhone"]
+#             if "contactPersonPhone" in ci:
+#                 company.contact_phone = ci["contactPersonPhone"]
 
-            if "contactEmail" in ci:
-                exists = (
-                    db.query(CompanyModel)
-                    .filter(
-                        CompanyModel.contact_email == ci["contactEmail"],
-                        CompanyModel.id != company.id,
-                    )
-                    .first()
-                )
-                if exists:
-                    raise HTTPException(
-                        status_code=status.HTTP_409_CONFLICT,
-                        detail="Email already registered with another company",
-                    )
-                company.contact_email = ci["contactEmail"]
+#             if "contactEmail" in ci:
+#                 exists = (
+#                     db.query(CompanyModel)
+#                     .filter(
+#                         CompanyModel.contact_email == ci["contactEmail"],
+#                         CompanyModel.id != company.id,
+#                     )
+#                     .first()
+#                 )
+#                 if exists:
+#                     raise HTTPException(
+#                         status_code=status.HTTP_409_CONFLICT,
+#                         detail="Email already registered with another company",
+#                     )
+#                 company.contact_email = ci["contactEmail"]
 
-        # Document Info update
-        if "documentInfo" in data:
-            di = data["documentInfo"]
+#         # Document Info update
+#         if "documentInfo" in data:
+#             di = data["documentInfo"]
 
-            if "logoUrl" in di:
-                company.logo_url = di["logoUrl"]
+#             if "logoUrl" in di:
+#                 company.logo_url = di["logoUrl"]
 
-            if "documents" in di:
-                db.query(CompanyDocumentModel).filter(
-                    CompanyDocumentModel.company_id == company.id
-                ).delete(synchronize_session=False)
+#             if "documents" in di:
+#                 db.query(CompanyDocumentModel).filter(
+#                     CompanyDocumentModel.company_id == company.id
+#                 ).delete(synchronize_session=False)
 
-                for doc in di["documents"]:
-                    db.add(
-                        CompanyDocumentModel(
-                            company_id=company.id,
-                            document_type=doc.get("documentType"),
-                            document_url=doc.get("documentUrl"),
-                        )
-                    )
+#                 for doc in di["documents"]:
+#                     db.add(
+#                         CompanyDocumentModel(
+#                             company_id=company.id,
+#                             document_type=doc.get("documentType"),
+#                             document_url=doc.get("documentUrl"),
+#                         )
+#                     )
 
-        db.flush()
-        return company
+#         db.flush()
+#         return company
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        print("DB ERROR 👉", e)  # or logger.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error updating contact info",
-        )
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         print("DB ERROR 👉", e)  # or logger.exception(e)
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail="Error updating contact info",
+#         )
 
 
 # -----------------------End Update Company Profile Service----------------------- #
@@ -624,14 +635,20 @@ def update_company_address_service(
                 detail="Company address not found",
             )
 
+        location = from_shape(
+            Point(
+                new_address.longitude, new_address.latitude
+            ),  # IMPORTANT: lng, lat order
+            srid=4326,
+        )
+
         # Update fields
         company_address.address = new_address.address
         company_address.unit_name = new_address.unitName
         company_address.city = new_address.city
         company_address.state = new_address.state
         company_address.pincode = new_address.pincode
-        company_address.latitude = new_address.latitude
-        company_address.longitude = new_address.longitude
+        company_address.location = location
 
         db.flush()
         return company_address
@@ -668,6 +685,13 @@ def add_new_company_service(
                 detail="Company profile not found",
             )
 
+        location = from_shape(
+            Point(
+                new_address.longitude, new_address.latitude
+            ),  # IMPORTANT: lng, lat order
+            srid=4326,
+        )
+
         new_company_address = CompanyAddressModel(
             company_id=company.id,
             address=new_address.address,
@@ -675,8 +699,7 @@ def add_new_company_service(
             city=new_address.city,
             state=new_address.state,
             pincode=new_address.pincode,
-            latitude=new_address.latitude,
-            longitude=new_address.longitude,
+            location=location,
         )
         db.add(new_company_address)
         db.flush()

@@ -1,3 +1,4 @@
+from geoalchemy2 import Geography
 from sqlalchemy import Column, ForeignKey, String, Boolean, Text, func, text
 
 from sqlalchemy.dialects.postgresql import UUID
@@ -46,9 +47,14 @@ class CompanyModel(Base):
         "CompanyDocumentModel", back_populates="company", cascade="all, delete-orphan"
     )
 
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
-        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )
 
 
@@ -67,10 +73,10 @@ class CompanyAddressModel(Base):
     city = Column(String, nullable=False)
     state = Column(String, nullable=False)
     pincode = Column(String, nullable=False)
-    latitude = Column(String, nullable=False)
-    longitude = Column(String, nullable=False)
-
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    location = Column(Geography("POINT", 4326), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     company = relationship("CompanyModel", back_populates="addresses")
 
@@ -88,7 +94,9 @@ class CompanyDocumentModel(Base):
     document_type = Column(String, nullable=True, index=True)
     document_url = Column(Text, nullable=True)
 
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     company = relationship("CompanyModel", back_populates="documents")
 
@@ -109,6 +117,8 @@ class CompanyBankDetailsModel(Base):
     ifsc_code = Column(String, nullable=True)
     upi_id = Column(String, nullable=True)
 
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     company = relationship("CompanyModel", backref="bank_details")
