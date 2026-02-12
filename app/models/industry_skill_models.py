@@ -48,7 +48,7 @@ class CategorySkillModel(Base):
         nullable=False,
     )
 
-    tier = Column(ForeignKey("industry_types.tier"), nullable=True)
+    tier = Column(String(50), nullable=True)
     name = Column(String(150), nullable=False)
     # description = Column(String(255), nullable=True)
 

@@ -24,10 +24,10 @@ class JobPostingModel(Base):
 
     # ---- References ----
     skill_category_id = Column(
-        UUID(as_uuid=True), ForeignKey("skill_categories.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("category_skills.id"), nullable=False
     )
     sub_category_id = Column(
-        UUID(as_uuid=True), ForeignKey("sub_categories.id"), nullable=True
+        UUID(as_uuid=True), ForeignKey("sub_category_skills.id"), nullable=True
     )
     industry_type_id = Column(
         UUID(as_uuid=True), ForeignKey("industry_types.id"), nullable=True
@@ -73,7 +73,7 @@ class JobPostingModel(Base):
     special_instructions = Column(Text, nullable=True)
 
     # ---- Status ----
-    status = Column(String, nullable=False)
+    status = Column(String, default="posted", nullable=False)
     is_active = Column(Boolean, server_default=text("true"))
 
     # ---- Timestamps ----
