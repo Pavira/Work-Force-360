@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from fastapi import HTTPException, status
 from geoalchemy2.shape import from_shape
 from shapely.geometry import Point
@@ -23,9 +21,9 @@ def create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
         )
 
         job = JobPostingModel(
-            skill_category_id=UUID(payload.skillCategoryId),
-            sub_category_id=UUID(payload.subCategoryId),
-            industry_type_id=UUID(payload.industryTypeId),
+            skill_category_id=payload.skillCategoryId,
+            sub_category_id=payload.subCategoryId,
+            industry_type_id=payload.industryTypeId,
             tier=payload.tier,
             description=payload.description,
             location=location,
@@ -51,9 +49,7 @@ def create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
         )
         db.add(job)
         db.flush()
-        return {
-            "id": job.id,
-        }
+        return job
 
     except HTTPException:
         raise

@@ -34,9 +34,7 @@ def create_job_post(
     return custom_response(
         success=True,
         message="Job post created successfully",
-        data={
-            "id": job[id],
-        },
+        data=job,
         code=status.HTTP_201_CREATED,
     )
 

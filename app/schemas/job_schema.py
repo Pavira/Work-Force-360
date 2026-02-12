@@ -11,13 +11,14 @@ from datetime import date, datetime, time
 class JobPostingSchema(BaseModel):
     # Basic info
     skillCategoryId: Optional[str] = Field(
-        None, example="f029fa9f-0c44-40e0-a426-774c80e44db2"
+        None, example="cd973909-d6e2-4fa7-be1a-3f8f875220f0"
     )
     subCategoryId: Optional[str] = Field(
-        None, example="f029fa9f-0c44-40e0-a426-774c80e44db2"
+        None, example="83deb5cd-fc10-4c88-abc0-8d6c2ec85652"
     )
     industryTypeId: Optional[str] = Field(
-        None, example="f029fa9f-0c44-40e0-a426-774c80e44db2"
+        None,
+        example="13c43402-faa9-4f42-b295-3e26a3f8f12b",
     )
     tier: Optional[int] = Field(None, example=1)
     description: Optional[str] = Field(
@@ -33,8 +34,8 @@ class JobPostingSchema(BaseModel):
     nearbyLandmark: Optional[str] = Field(None, example="Near Anna Nagar Tower Park")
 
     # -------- Timing (Timezone Aware) --------
-    scheduledStartDateTime: datetime = Field(..., example="2026-02-15T09:00:00+05:30")
-    scheduledEndDateTime: datetime = Field(..., example="2026-02-15T18:00:00+05:30")
+    scheduledStartDateTime: datetime = Field(None, example="2026-02-15T09:00:00+05:30")
+    scheduledEndDateTime: datetime = Field(None, example="2026-02-15T18:00:00+05:30")
     scheduledDuration: Optional[str] = Field(None, example="3")
     durationType: Optional[str] = Field(None, example="hours/days")
     shift: Optional[str] = Field(None, example="Day/Night/Rotational")
@@ -55,7 +56,7 @@ class JobPostingSchema(BaseModel):
 
     # Job Rules
     languagePreference: Optional[str] = Field(None, example="Tamil, English")
-    toolProvided: bool = Field(..., example=False)
+    toolProvided: bool = Field(None, example=False)
     toolDetails: Optional[str] = Field(
         None, example="Company will not provide any tools"
     )

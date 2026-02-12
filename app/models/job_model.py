@@ -24,7 +24,7 @@ class JobPostingModel(Base):
 
     # ---- References ----
     skill_category_id = Column(
-        UUID(as_uuid=True), ForeignKey("category_skills.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("category_skills.id"), nullable=True
     )
     sub_category_id = Column(
         UUID(as_uuid=True), ForeignKey("sub_category_skills.id"), nullable=True
@@ -53,7 +53,7 @@ class JobPostingModel(Base):
     actual_end_at = Column(DateTime(timezone=True), nullable=True)
 
     # ---- Workforce ----
-    workers = Column(Integer, nullable=False)
+    workers = Column(Integer, nullable=True)
     experience_required = Column(String, nullable=True)
 
     # ---- Payment ----
@@ -68,7 +68,7 @@ class JobPostingModel(Base):
 
     # ---- Rules ----
     language_preference = Column(String, nullable=True)
-    tool_provided = Column(Boolean, nullable=False)
+    tool_provided = Column(Boolean, nullable=True)
     tool_details = Column(Text, nullable=True)
     special_instructions = Column(Text, nullable=True)
 
@@ -78,7 +78,7 @@ class JobPostingModel(Base):
 
     # ---- Timestamps ----
     posted_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True), server_default=func.now(), nullable=True
     )
     assigned_at = Column(DateTime(timezone=True), nullable=True)
     started_at = Column(DateTime(timezone=True), nullable=True)
