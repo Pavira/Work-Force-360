@@ -57,7 +57,8 @@ def create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
 
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error creating job post",
@@ -74,7 +75,8 @@ def get_all_job_posts_service(db: Session) -> list:
             db.query(JobPostingModel).filter(JobPostingModel.is_active == True).all()
         )
         return job_posts
-    except Exception:
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error retrieving job posts",
@@ -102,7 +104,8 @@ def get_job_post_by_id_service(job_id: str, db: Session) -> JobPostingModel:
         return job_post
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error retrieving job post",
