@@ -264,7 +264,7 @@ def update_document_info_service(
                 detail="Company profile not found",
             )
 
-        # Update contact info
+        # Update document info
         company_profile.logo_url = contact_info.logoUrl
         for doc in contact_info.documents:
             db.add(

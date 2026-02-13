@@ -1,42 +1,113 @@
-import uuid
+from geoalchemy2 import Geography
 from sqlalchemy import (
     Column,
-    String,
-    Boolean,
     DateTime,
     ForeignKey,
-    Float,
+    String,
+    Text,
     Integer,
+    Boolean,
+    Index,
     func,
+    text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
+
 from app.db.base import Base
-from datetime import datetime, timezone
 
 
 class WorkerRegistrationModel(Base):
     __tablename__ = "workers"
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(String(255), unique=True, nullable=False)
-    phone_number = Column(String(20))
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    firebase_uid = Column(String, unique=True, nullable=False, index=True)
+
+    # ---- Personal Info ----
     name = Column(String(255), nullable=False)
-    address = Column(String)
+    auth_number = Column(String(32), nullable=True, index=True)
 
-    aadhaar_url = Column(JSONB, nullable=False)
-    pan_url = Column(JSONB, nullable=False)
-    certificate_url = Column(JSONB, server_default="[]")
-    profile_pic_url = Column(String)
+    # ---- Skills ----
+    category_id = Column(UUID(as_uuid=True), nullable=True)
+    category_name = Column(String(150), nullable=True)
 
-    skill_category = Column(String)
-    sub_category = Column(String)
-    role_type = Column(String)
-    years = Column(String)
-    months = Column(String)
+    sub_categories = relationship(
+        "WorkerSubCategoryModel",
+        back_populates="worker",
+        cascade="all, delete-orphan",
+    )
 
-    agreed = Column(Boolean, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # ---- Location ----
+    address = Column(Text, nullable=True)
+    city = Column(String(120), nullable=True)
+    state = Column(String(120), nullable=True)
+    pincode = Column(String(20), nullable=True)
+    location = Column(Geography("POINT", 4326), nullable=True)
 
-    skills = Column(JSONB, server_default="[]")
-    location = Column(JSONB)
+    # ---- Experience ----
+    years = Column(Integer, nullable=True)
+
+    # ---- Documents ----
+    logo_url = Column(Text, nullable=True)
+    documents = relationship(
+        "WorkerDocumentModel",
+        back_populates="worker",
+        cascade="all, delete-orphan",
+    )
+
+    # ---- Status ----
+    status = Column(String(50), default="draft", nullable=False)
+    is_active = Column(Boolean, server_default=text("true"))
+
+    # ---- Timestamps ----
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class WorkerSubCategoryModel(Base):
+    __tablename__ = "worker_skill_selections"
+
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    worker_id = Column(
+        UUID(as_uuid=True), ForeignKey("workers.id"), nullable=False, index=True
+    )
+
+    sub_category_id = Column(UUID(as_uuid=True), nullable=False)
+    sub_category_name = Column(String(150), nullable=True)
+
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    worker = relationship("WorkerRegistrationModel", back_populates="sub_categories")
+
+
+class WorkerDocumentModel(Base):
+    __tablename__ = "worker_documents"
+
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    worker_id = Column(
+        UUID(as_uuid=True), ForeignKey("workers.id"), nullable=False, index=True
+    )
+
+    document_type = Column(String(120), nullable=True, index=True)
+    document_url = Column(Text, nullable=True)
+
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    worker = relationship("WorkerRegistrationModel", back_populates="documents")

@@ -42,7 +42,7 @@ class JobPostingSchema(BaseModel):
 
     # Workforce
     workers: int = Field(..., example=5)
-    experienceRequired: Optional[str] = Field(None, example="2+ years")
+    experienceRequired: Optional[int] = Field(None, example="2")
 
     # Payment
     wage: int = Field(..., example=600)
@@ -63,97 +63,3 @@ class JobPostingSchema(BaseModel):
     specialInstructions: Optional[str] = Field(
         None, example="Report at main gate by 8:45 AM"
     )
-
-
-# ------------------------
-# SubSchema
-# ------------------------
-
-
-class WorkerSchema(BaseModel):
-    workerId: str = Field(..., example="W123456")
-    name: str = Field(..., example="Sangeetha S")
-    phone: str = Field(..., example="+919876543210")
-    photoUrl: Optional[HttpUrl] = Field(
-        None,
-        example="https://firebasestorage.googleapis.com/v0/b/app/profile/worker_photo.jpg",
-    )
-    rating: Optional[float] = Field(None, example=4.7)
-
-
-# ------------------------
-# Main Job Detail Schema
-# ------------------------
-
-
-class JobDetailSchema(BaseModel):
-    jobId: str = Field(..., example="JOB98765")
-    role: str = Field(..., example="Electrician")
-    companyName: str = Field(..., example="ABC Infra Pvt Ltd")
-    wage: float = Field(..., example=650.0)
-    status: str = Field(
-        ..., example="Ongoing"
-    )  # e.g., Open, Ongoing, Completed, Cancelled
-
-    startDate: str = Field(..., example="2025-11-10")
-    startTime: str = Field(..., example="09:00 AM")
-    endDate: Optional[str] = Field(None, example="2025-11-12")
-    endTime: Optional[str] = Field(None, example="06:00 PM")
-
-    assignedWorker: Optional[WorkerSchema] = None
-
-
-# ------------------------ Job Post Schema ------------------------
-class JobPostSchema(BaseModel):
-    # Basic Info
-    id: str = Field(..., example="JOB123456")
-    title: Optional[str] = Field(None, example="Electrical Maintenance Work")
-    subCategory: Optional[str] = Field(None, example="Wiring")
-    companyId: Optional[str] = Field(None, example="COMP456789")
-    companyName: Optional[str] = Field(None, example="ABC Infra Pvt Ltd")
-    companyLogoUrl: Optional[HttpUrl] = Field(
-        None,
-        example="https://firebasestorage.googleapis.com/v0/b/app/logo/company_logo.jpg",
-    )
-    createdBy: Optional[str] = Field(None, example="EMP12345")
-
-    # Contact Info
-    contactName: Optional[str] = Field(None, example="Suresh Kumar")
-    contactPhone: Optional[str] = Field(None, example="+919876543210")
-
-    # Job Details
-    status: Optional[str] = Field(
-        None, example="Open"
-    )  # e.g., Open, Assigned, Completed, Cancelled
-    tier: Optional[int] = Field(None, example=2)
-    wage: Optional[float] = Field(None, example=650.0)
-    startDate: Optional[str] = Field(None, example="2025-11-10")
-    startTime: Optional[str] = Field(None, example="09:00 AM")
-    endDate: Optional[str] = Field(None, example="2025-11-12")
-    endTime: Optional[str] = Field(None, example="06:00 PM")
-    isNext: Optional[bool] = Field(None, example=False)
-
-    # Ratings
-    ratingByCompany: Optional[float] = Field(None, example=4.8)
-    ratingByWorker: Optional[float] = Field(None, example=4.5)
-
-    # Firestore Timestamp Equivalents
-    createdAt: Optional[datetime] = Field(None, example="2025-11-06T06:45:12.000Z")
-    startTimestamp: Optional[datetime] = Field(None, example="2025-11-10T09:00:00.000Z")
-    endTimestamp: Optional[datetime] = Field(None, example="2025-11-12T18:00:00.000Z")
-    pendingSince: Optional[datetime] = Field(None, example="2025-11-06T06:45:12.000Z")
-    pendingExpiresAt: Optional[datetime] = Field(
-        None, example="2025-11-07T06:45:12.000Z"
-    )
-    confirmedAt: Optional[datetime] = Field(None, example="2025-11-06T10:00:00.000Z")
-    rejectExpiresAt: Optional[datetime] = Field(
-        None, example="2025-11-07T10:00:00.000Z"
-    )
-    startedAt: Optional[datetime] = Field(None, example="2025-11-10T09:00:00.000Z")
-    completedAt: Optional[datetime] = Field(None, example="2025-11-12T18:00:00.000Z")
-    cancelledAt: Optional[datetime] = Field(None, example="2025-11-09T20:00:00.000Z")
-
-    # System / Meta
-    cancelledBy: Optional[str] = Field(None, example="Worker123")
-    autoAssigned: Optional[bool] = Field(None, example=True)
-    penalty: Optional[int] = Field(None, example=200)

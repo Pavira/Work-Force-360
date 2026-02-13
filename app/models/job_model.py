@@ -54,7 +54,7 @@ class JobPostingModel(Base):
 
     # ---- Workforce ----
     workers = Column(Integer, nullable=True)
-    experience_required = Column(String, nullable=True)
+    experience_required = Column(Integer, nullable=True)
 
     # ---- Payment ----
     wage = Column(Integer, nullable=False)
