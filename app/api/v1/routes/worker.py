@@ -7,8 +7,12 @@ from sqlalchemy.orm import Session
 from app.core.firebase_auth import get_current_user
 from app.core.limiter import limiter
 from app.db.session import get_db
+from app.schemas.company_schema import UploadUrlRequest
 from app.schemas.worker_schema import WorkerRegistrationSchema
-from app.services.worker_service import create_worker_service
+from app.services.worker_service import (
+    create_worker_service,
+    generate_upload_url_service,
+)
 from app.utils.response import custom_response
 
 
@@ -49,3 +53,28 @@ def create_worker_registration(
 
 
 # ------------------------END Worker Registration Route ------------------------
+
+# -----------------------Generate S3 Upload URL----------------------- #
+
+
+@router.put("/documents/upload-url")
+@limiter.limit("30/minute")
+def generate_upload_url(
+    request: Request,  # REQUIRED by SlowAPI
+    payload: UploadUrlRequest,
+    current_user=Depends(get_current_user),
+):
+
+    urls = generate_upload_url_service(
+        file_type=payload.file_type, current_user=current_user["uid"]
+    )
+
+    return custom_response(
+        success=True,
+        message="Upload URL generated successfully",
+        data=urls,
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Generate S3 Upload URL----------------------- #

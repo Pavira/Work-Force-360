@@ -1,5 +1,7 @@
+import os
 import traceback
 from typing import Optional
+from uuid import uuid4
 
 from fastapi import HTTPException, status
 from geoalchemy2.shape import from_shape
@@ -12,6 +14,25 @@ from app.models.worker_models import (
     WorkerSubCategoryModel,
 )
 from app.schemas.worker_schema import WorkerRegistrationSchema
+
+
+# Helper function for s3 upload url
+import boto3
+from botocore.exceptions import ClientError
+
+s3_client = boto3.client(
+    "s3",
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    region_name="us-east-1",
+)
+
+objects = s3_client.list_objects_v2(Bucket="workforce360-terms", Prefix="worker_docs/")
+
+print(objects)
+# End helper function for s3 upload url
+
+# ------------------------ Worker Registration Service ------------------------ #
 
 
 def _build_location(latitude: Optional[float], longitude: Optional[float]):
@@ -88,3 +109,56 @@ def create_worker_service(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error creating worker registration",
         )
+
+
+# -----------------------END Worker Registration Service -----------------------
+
+
+# # -----------------------Generate S3 Upload URL Service----------------------- #
+def generate_upload_url_service(
+    file_type: str,
+    current_user,
+) -> dict:
+    try:
+        allowed_types = ["png", "jpg", "jpeg", "pdf"]
+        if file_type not in allowed_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unsupported file type",
+            )
+
+        CONTENT_TYPES = {
+            "png": "image/png",
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "pdf": "application/pdf",
+        }
+
+        key = f"worker_docs/{current_user}/{uuid4()}.{file_type}"
+
+        url = s3_client.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": "workforce360-terms",
+                "Key": key,
+                "ContentType": CONTENT_TYPES[file_type],
+            },
+            ExpiresIn=300,  # 5 minutes
+        )
+
+        return {
+            "upload_url": url,
+            "file_url": f"https://workforce360-terms.s3.amazonaws.com/{key}",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("S3 ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error generating upload URL",
+        )
+
+
+# -----------------------End Generate S3 Upload URL Service----------------------- #

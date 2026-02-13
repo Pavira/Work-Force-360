@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 # ------------------------Registration Schema ------------------------
 class WorkerDocumentCreateSchema(BaseModel):
-    documentType: Optional[str] = None
+    documentType: Optional[str] = Field(None, example="AC/PAN/CR")
     documentUrl: Optional[str] = None
 
 
