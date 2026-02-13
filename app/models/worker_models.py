@@ -23,11 +23,12 @@ class WorkerRegistrationModel(Base):
     id = Column(
         UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
     )
-    firebase_uid = Column(String, unique=True, nullable=False, index=True)
+    firebase_uid = Column(String, unique=True, nullable=False)
 
     # ---- Personal Info ----
     name = Column(String(255), nullable=False)
-    auth_number = Column(String(32), nullable=True, index=True)
+    country_code = Column(String(10), nullable=True)
+    auth_number = Column(String(32), nullable=True)
 
     # ---- Skills ----
     category_id = Column(UUID(as_uuid=True), nullable=True)
@@ -103,7 +104,7 @@ class WorkerDocumentModel(Base):
         UUID(as_uuid=True), ForeignKey("workers.id"), nullable=False, index=True
     )
 
-    document_type = Column(String(120), nullable=True, index=True)
+    document_type = Column(String(120), nullable=True)
     document_url = Column(Text, nullable=True)
 
     created_at = Column(

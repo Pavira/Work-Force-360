@@ -35,7 +35,8 @@ class WorkerRegistrationSchema(BaseModel):
 
     # -------- Personal Info --------
     name: str = Field(..., example="Sangeetha S")
-    authNumber: Optional[str] = Field(None, example="+919876543210")
+    countryCode: Optional[str] = Field(None, example="+91")
+    authNumber: Optional[str] = Field(None, example="9876543210")
 
     # -------- Skills ---------
     categoryId: Optional[str] = Field(
