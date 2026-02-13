@@ -66,7 +66,7 @@ def create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
 
 
 # ------------------------GET All Job Post Service ------------------------
-def get_all_job_posts_service(db: Session) -> list:
+def get_all_job_posts_service(db: Session) -> list[JobPostingSchema]:
     try:
         job_posts = (
             db.query(JobPostingModel).filter(JobPostingModel.is_active == True).all()
