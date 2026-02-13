@@ -4,16 +4,20 @@ from typing import Optional
 from uuid import uuid4
 
 from fastapi import HTTPException, status
-from geoalchemy2.shape import from_shape
+from geoalchemy2.shape import from_shape, to_shape
 from shapely.geometry import Point
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.worker_models import (
     WorkerDocumentModel,
     WorkerRegistrationModel,
     WorkerSubCategoryModel,
 )
-from app.schemas.worker_schema import WorkerRegistrationSchema
+from app.schemas.worker_schema import (
+    WorkerAddressUpdateSchema,
+    WorkerDocumentCreateSchema,
+    WorkerRegistrationSchema,
+)
 
 
 # Helper function for s3 upload url
@@ -31,6 +35,30 @@ objects = s3_client.list_objects_v2(Bucket="workforce360-terms", Prefix="worker_
 
 print(objects)
 # End helper function for s3 upload url
+
+# -----------------------Get Worker Terms and Conditions Service----------------------- #
+WORKER_TERMS_BUCKET_NAME = "workforce360-terms"
+WORKER_TERMS_KEY = "worker_terms.html"
+
+
+def get_worker_terms_and_conditions() -> str:
+    try:
+        response = s3_client.get_object(
+            Bucket=WORKER_TERMS_BUCKET_NAME,
+            Key=WORKER_TERMS_KEY,
+        )
+
+        html_content = response["Body"].read().decode("utf-8")
+        return html_content
+
+    except ClientError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to fetch Worker Terms and Conditions",
+        )
+
+
+# -----------------------End Get Worker Terms and Conditions Service----------------------- #
 
 # ------------------------ Worker Registration Service ------------------------ #
 
@@ -112,6 +140,347 @@ def create_worker_service(
 
 
 # -----------------------END Worker Registration Service -----------------------
+
+
+# -----------------------Worker profile exist or not Service ----------------------- #
+def worker_profile_exist_service(
+    firebase_uid: str,
+    db: Session,
+) -> WorkerRegistrationModel | None:
+    return (
+        db.query(WorkerRegistrationModel)
+        .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
+        .first()
+    )
+
+
+# -----------------------End Worker profile exist or not Service ----------------------- #
+
+
+# -----------------------Get Worker Profile Service ----------------------- #
+def get_worker_profile_service(
+    firebase_uid: str,
+    db: Session,
+) -> dict:
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .options(
+                selectinload(WorkerRegistrationModel.sub_categories),
+            )
+            .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        return {
+            "id": worker.id,
+            "firebase_uid": worker.firebase_uid,
+            "name": worker.name,
+            "authNumber": worker.auth_number,
+            "logoUrl": worker.logo_url,
+            "categoryId": worker.category_id,
+            "categoryName": worker.category_name,
+            "subCategory": {
+                "subCategoryIds": [sc.sub_category_id for sc in worker.sub_categories],
+                "subCategoryNames": [
+                    sc.sub_category_name for sc in worker.sub_categories
+                ],
+            },
+            "address": worker.address,
+            "city": worker.city,
+            "state": worker.state,
+            "pincode": worker.pincode,
+            "years": worker.years,
+            "status": worker.status,
+            "is_active": worker.is_active,
+            "created_at": worker.created_at,
+            "updated_at": worker.updated_at,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("get_worker_profile_service DB ERROR:", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching worker profile",
+        )
+
+
+# -----------------------End Get Worker Profile Service ----------------------- #
+
+
+# -----------------------Get All Worker Details Service----------------------- #
+def get_all_worker_details_service(
+    db: Session,
+) -> list[WorkerRegistrationModel]:
+    try:
+        return db.query(WorkerRegistrationModel).all()
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR =>", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching all worker details",
+        )
+
+
+# -----------------------End Get All Worker Details Service----------------------- #
+
+
+# -----------------------Delete Worker Details Service----------------------- #
+def delete_worker_profile_service(
+    auth_number: str,
+    db: Session,
+) -> WorkerRegistrationModel:
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.auth_number == auth_number)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        db.query(WorkerSubCategoryModel).filter(
+            WorkerSubCategoryModel.worker_id == worker.id
+        ).delete()
+
+        db.query(WorkerDocumentModel).filter(
+            WorkerDocumentModel.worker_id == worker.id
+        ).delete()
+
+        db.delete(worker)
+        db.flush()
+
+        return worker
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR =>", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error deleting worker details",
+        )
+
+
+# -----------------------End Delete Worker Details Service----------------------- #
+
+
+# -----------------------Get Worker Documents by Type Service----------------------- #
+def get_worker_documents_by_type_service(
+    firebase_uid: str,
+    document_type: str,
+    db: Session,
+) -> list[WorkerDocumentModel]:
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        documents = (
+            db.query(WorkerDocumentModel)
+            .filter(
+                WorkerDocumentModel.worker_id == worker.id,
+                WorkerDocumentModel.document_type == document_type,
+            )
+            .all()
+        )
+
+        return documents
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR =>", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching worker documents by type",
+        )
+
+
+# -----------------------End Get Worker Documents by Type Service----------------------- #
+
+
+# -----------------------Update Worker Logo Service----------------------- #
+def update_worker_logo_service(
+    logo_url: str | None,
+    firebase_uid: str,
+    db: Session,
+) -> WorkerRegistrationModel:
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        worker.logo_url = logo_url
+        db.flush()
+        return worker
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR =>", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating worker logo",
+        )
+
+
+# -----------------------End Update Worker Logo Service----------------------- #
+
+
+# -----------------------Add more documents against worker id & document type service----------------------- #
+def add_document_against_worker_id_and_type_service(
+    firebase_uid: str,
+    db: Session,
+    document_info: WorkerDocumentCreateSchema,
+):
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        document = WorkerDocumentModel(
+            document_type=document_info.documentType,
+            document_url=document_info.documentUrl,
+            worker_id=worker.id,
+        )
+        db.add(document)
+        db.flush()
+        return document
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR =>", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error adding document against worker id and type",
+        )
+
+
+# -----------------------End Add more documents against worker id & document type service----------------------- #
+
+
+# -----------------------Get worker name and status Service----------------------- #
+def worker_name_and_status_service(
+    firebase_uid: str,
+    db: Session,
+) -> dict:
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        return {
+            "name": worker.name,
+            "logoUrl": worker.logo_url,
+            "status": worker.status,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR =>", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching worker name and status",
+        )
+
+
+# -----------------------End Get worker name and status Service----------------------- #
+
+
+# -----------------------Update Worker Address Service ----------------------- #
+def update_worker_address_service(
+    firebase_uid: str,
+    address: WorkerAddressUpdateSchema,
+    db: Session,
+) -> WorkerRegistrationModel:
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        if address.address is not None:
+            worker.address = address.address
+        if address.city is not None:
+            worker.city = address.city
+        if address.state is not None:
+            worker.state = address.state
+        if address.pincode is not None:
+            worker.pincode = address.pincode
+
+        if address.latitude is not None and address.longitude is not None:
+            worker.location = _build_location(address.latitude, address.longitude)
+
+        db.flush()
+        return worker
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR =>", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating worker address",
+        )
+
+
+# -----------------------End Update Worker Address Service ----------------------- #
 
 
 # # -----------------------Generate S3 Upload URL Service----------------------- #

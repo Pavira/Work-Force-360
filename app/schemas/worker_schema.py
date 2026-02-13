@@ -58,3 +58,16 @@ class WorkerRegistrationSchema(BaseModel):
 
     # --------- Documents ---------
     documentInfo: Optional[WorkerDocumentInfoSchema] = None
+
+
+class WorkerAddressUpdateSchema(BaseModel):
+    address: Optional[str] = Field(None, example="123, Anna Nagar, Chennai")
+    city: Optional[str] = Field(None, example="Chennai")
+    state: Optional[str] = Field(None, example="Tamil Nadu")
+    pincode: Optional[str] = Field(None, example="600040")
+    latitude: Optional[float] = Field(None, example=13.0827)
+    longitude: Optional[float] = Field(None, example=80.2707)
+
+
+class WorkerLogoUpdateSchema(BaseModel):
+    logo_url: str | None = None

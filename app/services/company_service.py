@@ -49,7 +49,7 @@ def get_company_profile_service(
             db.query(CompanyModel)
             .options(
                 selectinload(CompanyModel.addresses),
-                selectinload(CompanyModel.documents),
+                # selectinload(CompanyModel.documents),
                 selectinload(CompanyModel.bank_details),
             )
             .filter(CompanyModel.firebase_uid == firebase_uid)

@@ -1,6 +1,6 @@
 import traceback
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -8,15 +8,70 @@ from app.core.firebase_auth import get_current_user
 from app.core.limiter import limiter
 from app.db.session import get_db
 from app.schemas.company_schema import UploadUrlRequest
-from app.schemas.worker_schema import WorkerRegistrationSchema
+from app.schemas.worker_schema import (
+    WorkerAddressUpdateSchema,
+    WorkerDocumentCreateSchema,
+    WorkerLogoUpdateSchema,
+    WorkerRegistrationSchema,
+)
 from app.services.worker_service import (
+    add_document_against_worker_id_and_type_service,
     create_worker_service,
+    delete_worker_profile_service,
     generate_upload_url_service,
+    get_all_worker_details_service,
+    get_worker_documents_by_type_service,
+    get_worker_profile_service,
+    get_worker_terms_and_conditions,
+    update_worker_logo_service,
+    update_worker_address_service,
+    worker_name_and_status_service,
+    worker_profile_exist_service,
 )
 from app.utils.response import custom_response
 
 
 router = APIRouter()
+
+
+# -----------------------Worker exist or not------------------------ #
+@router.get("/worker_exists", status_code=status.HTTP_200_OK)
+def worker_exists(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Check if worker profile exists (Firebase authenticated).
+    """
+
+    worker = worker_profile_exist_service(
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    if not worker:
+        return custom_response(
+            success=True,
+            message="Worker profile not found",
+            data={"exists": False},
+            code=status.HTTP_200_OK,
+        )
+
+    return custom_response(
+        success=True,
+        message="Worker profile found",
+        data={
+            "exists": True,
+            "id": worker.id,
+            "name": worker.name,
+            "status": worker.status,
+        },
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Worker exist or not----------------------- #
 
 
 # ------------------------ Worker Registration Route ------------------------
@@ -53,6 +108,278 @@ def create_worker_registration(
 
 
 # ------------------------END Worker Registration Route ------------------------
+
+
+# -----------------------Get All Worker Details----------------------- #
+@router.get(
+    "/all_worker_details",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_all_worker_details(
+    request: Request,  # REQUIRED by SlowAPI
+    db: Session = Depends(get_db),
+):
+    """
+    Get all worker details.
+    """
+    worker_details = get_all_worker_details_service(db=db)
+
+    return custom_response(
+        success=True,
+        message="All worker details fetched successfully",
+        data=worker_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Get All Worker Details----------------------- #
+
+
+# -----------------------Delete Worker Details----------------------- #
+@router.delete(
+    "/delete_worker/{auth_number}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def delete_worker_details(
+    request: Request,  # REQUIRED by SlowAPI
+    auth_number: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Delete worker details.
+    """
+    worker_details = delete_worker_profile_service(
+        auth_number=auth_number,
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker details deleted successfully",
+        data={"id": worker_details.id, "name": worker_details.name},
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Delete Worker Details----------------------- #
+
+
+# -----------------------Get Worker Documents based on document type----------------------- #
+@router.get(
+    "/get_worker_documents_by_type/{document_type}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def get_worker_documents(
+    request: Request,  # REQUIRED by SlowAPI
+    document_type: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Get worker documents based on document type (Firebase authenticated).
+    """
+    documents = get_worker_documents_by_type_service(
+        document_type=document_type,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker documents fetched successfully",
+        data={"documents": documents},
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Get Worker Documents based on document type----------------------- #
+
+
+# -----------------------Update Worker Profile Logo----------------------- #
+@router.patch(
+    "/update_worker_logo",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def update_worker_logo(
+    request: Request,  # REQUIRED by SlowAPI
+    logo_url: WorkerLogoUpdateSchema,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Update worker profile logo (Firebase authenticated).
+    """
+    worker = update_worker_logo_service(
+        logo_url=logo_url.logo_url,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker logo updated successfully",
+        data={
+            "id": worker.id,
+        },
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Update Worker Profile Logo----------------------- #
+
+
+# -----------------------Add more documents against worker id & document type----------------------- #
+@router.post(
+    "/add_documents_against_worker_id_and_type",
+    status_code=status.HTTP_201_CREATED,
+)
+@limiter.limit("30/minute")
+def add_documents_against_worker_id_and_type(
+    request: Request,  # REQUIRED by SlowAPI
+    document_info: WorkerDocumentCreateSchema,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Add more documents against worker id & document type (Firebase authenticated).
+    """
+    document_db = add_document_against_worker_id_and_type_service(
+        document_info=document_info,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker document added successfully",
+        data={
+            "id": document_db.id,
+        },
+        code=status.HTTP_201_CREATED,
+    )
+
+
+# -----------------------End Add more documents against worker id & document type----------------------- #
+
+
+# -----------------------Get Worker Name and Status----------------------- #
+@router.get(
+    "/get_worker_name_and_status",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("100/minute")
+def get_worker_name_and_status(
+    request: Request,  # REQUIRED by SlowAPI
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Get worker name and status (Firebase authenticated).
+    """
+    worker = worker_name_and_status_service(
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker profile found",
+        data={
+            "name": worker["name"],
+            "logo_url": worker["logoUrl"],
+            "status": worker["status"],
+        },
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Get Worker Name and Status----------------------- #
+
+
+# -----------------------Get Worker Profile Route----------------------- #
+@router.get(
+    "/get_worker_profile",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_worker_profile(
+    request: Request,  # REQUIRED by SlowAPI
+    current_user: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Get worker profile (Firebase authenticated).
+    """
+    worker_details = get_worker_profile_service(firebase_uid=current_user["uid"], db=db)
+
+    return custom_response(
+        success=True,
+        message="Worker profile fetched successfully",
+        data=worker_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Get Worker Profile Route----------------------- #
+
+
+# -----------------------Update Worker Address----------------------- #
+@router.patch("/update_worker_address", status_code=status.HTTP_200_OK)
+@limiter.limit("30/minute")
+def update_worker_address(
+    request: Request,  # REQUIRED by SlowAPI
+    address: WorkerAddressUpdateSchema,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Update worker address (Firebase authenticated).
+    """
+    worker = update_worker_address_service(
+        address=address,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker address updated successfully",
+        data={
+            "id": worker.id,
+            "address": worker.address,
+            "city": worker.city,
+            "state": worker.state,
+            "pincode": worker.pincode,
+        },
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Update Worker Address----------------------- #
+
+
+# -----------------------Fetch Worker Terms and Conditions----------------------- #
+@router.get(
+    "/terms",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def fetch_worker_terms_and_conditions(
+    request: Request,  # REQUIRED by SlowAPI
+):
+    """
+    Fetch latest Worker Terms and Conditions.
+    """
+
+    html = get_worker_terms_and_conditions()
+    return Response(content=html, media_type="text/html")
+
+
+# -----------------------End Fetch Worker Terms and Conditions----------------------- #
 
 # -----------------------Generate S3 Upload URL----------------------- #
 
