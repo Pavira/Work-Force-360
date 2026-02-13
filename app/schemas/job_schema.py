@@ -34,9 +34,13 @@ class JobPostingSchema(BaseModel):
     nearbyLandmark: Optional[str] = Field(None, example="Near Anna Nagar Tower Park")
 
     # -------- Timing (Timezone Aware) --------
-    scheduledStartDateTime: datetime = Field(None, example="2026-02-15T09:00:00+05:30")
-    scheduledEndDateTime: datetime = Field(None, example="2026-02-15T18:00:00+05:30")
-    scheduledDuration: Optional[str] = Field(None, example="3")
+    scheduledStartDateTime: Optional[datetime] = Field(
+        None, example="2026-02-15T09:00:00+05:30"
+    )
+    scheduledEndDateTime: Optional[datetime] = Field(
+        None, example="2026-02-15T18:00:00+05:30"
+    )
+    scheduledDuration: str = Field(..., example="3")
     durationType: Optional[str] = Field(None, example="hours/days")
     shift: Optional[str] = Field(None, example="Day/Night/Rotational")
 
