@@ -68,7 +68,19 @@ def create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
 # ------------------------GET All Job Post Service ------------------------
 def get_all_job_posts_service(db: Session) -> list[JobPostingModel]:
     try:
-        return db.query(JobPostingModel).all()
+        jobs = db.query(JobPostingModel).all()
+
+        result = []
+        for job in jobs:
+            job_dict = {
+                c.name: getattr(job, c.name)
+                for c in job.__table__.columns
+                if c.name != "location"  # exclude geography field
+            }
+            result.append(job_dict)
+
+        return result
+
     except Exception as e:
         print("get_all_job_posts_service DB ERROR:", str(e))
         traceback.print_exc()
