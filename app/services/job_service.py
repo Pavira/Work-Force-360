@@ -66,7 +66,7 @@ def create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
 
 
 # ------------------------GET All Job Post Service ------------------------
-def get_all_job_posts_service(db: Session) -> list[JobPostingSchema]:
+def get_all_job_posts_service(db: Session) -> list[JobPostingModel]:
     try:
         return db.query(JobPostingModel).all()
     except Exception as e:
