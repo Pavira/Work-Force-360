@@ -219,9 +219,38 @@ def get_worker_profile_service(
 # -----------------------Get All Worker Details Service----------------------- #
 def get_all_worker_details_service(
     db: Session,
-) -> list[WorkerRegistrationModel]:
+) -> list[dict]:
     try:
-        return db.query(WorkerRegistrationModel).all()
+        workers = db.query(WorkerRegistrationModel).all()
+
+        worker_details = []
+        for worker in workers:
+            # point = to_shape(worker.location) if worker.location else None
+            worker_details.append(
+                {
+                    "id": worker.id,
+                    "firebase_uid": worker.firebase_uid,
+                    "name": worker.name,
+                    "country_code": worker.country_code,
+                    "authNumber": worker.auth_number,
+                    "categoryId": worker.category_id,
+                    "categoryName": worker.category_name,
+                    "address": worker.address,
+                    "city": worker.city,
+                    "state": worker.state,
+                    "pincode": worker.pincode,
+                    # "latitude": (point.y if point else None),
+                    # "longitude": (point.x if point else None),
+                    "years": worker.years,
+                    "logoUrl": worker.logo_url,
+                    "status": worker.status,
+                    "is_active": worker.is_active,
+                    "created_at": worker.created_at,
+                    "updated_at": worker.updated_at,
+                }
+            )
+
+        return worker_details
     except HTTPException:
         raise
     except Exception as e:
