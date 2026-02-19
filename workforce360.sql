@@ -13,7 +13,6 @@ select * from worker_documents
 
 
 
-
 -------Temparary Query------------------------
 UPDATE category_skills
 SET tier = 'Tier 1'
@@ -42,8 +41,8 @@ RESTART IDENTITY;
 
 TRUNCATE TABLE
     worker_documents,
-	worker_skill_categories
-	worker_skill_subcategories
+	worker_skill_categories,
+	worker_skill_subcategories,
     workers
 RESTART IDENTITY;
 

@@ -32,7 +32,7 @@ class WorkerRegistrationModel(Base):
     auth_number = Column(String(32), nullable=True)
 
     categories = relationship(
-        "WorkerCategoryModel",
+        "WorkerSkillCategoryModel",
         back_populates="worker",
         cascade="all, delete-orphan",
     )
