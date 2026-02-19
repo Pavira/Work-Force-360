@@ -8,9 +8,11 @@ from geoalchemy2.shape import from_shape, to_shape
 from shapely.geometry import Point
 from sqlalchemy.orm import Session, selectinload
 
+from app.models.industry_skill_models import SubCategorySkillModel
 from app.models.worker_models import (
     WorkerDocumentModel,
     WorkerRegistrationModel,
+    WorkerSkillCategoryModel,
     WorkerSubCategoryModel,
 )
 from app.schemas.worker_schema import (
@@ -78,45 +80,77 @@ def create_worker_service(
     Service function to create a new worker registration entry.
     """
     try:
-        # Validation 1 - Prevent duplicate registration for same firebase_uid
-        reg = (
+        # Prevent duplicate registration
+        existing = (
             db.query(WorkerRegistrationModel)
             .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
             .first()
         )
+
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Worker already registered",
+            )
 
         reg = WorkerRegistrationModel(
             firebase_uid=firebase_uid,
             name=worker.name,
             country_code=worker.countryCode,
             auth_number=worker.authNumber,
-            category_id=worker.categoryId,
-            category_name=worker.categoryName,
             address=worker.address,
             city=worker.city,
             state=worker.state,
             pincode=worker.pincode,
             location=_build_location(worker.latitude, worker.longitude),
-            years=worker.years,
             logo_url=(worker.documentInfo.logoUrl if worker.documentInfo else None),
         )
         db.add(reg)
         db.flush()
 
-        if worker.subCategory:
-            for idx, sub_id in enumerate(worker.subCategory.subCategoryIds or []):
-                sub_name = None
-                if worker.subCategory.subCategoryNames:
-                    if idx < len(worker.subCategory.subCategoryNames):
-                        sub_name = worker.subCategory.subCategoryNames[idx]
-                db.add(
-                    WorkerSubCategoryModel(
-                        worker_id=reg.id,
-                        sub_category_id=sub_id,
-                        sub_category_name=sub_name,
+        # ----------------------------
+        # Handle Skills (Professional)
+        # ----------------------------
+        for category in worker.categories:
+
+            # Insert category with experience
+            worker_category = WorkerSkillCategoryModel(
+                worker_id=reg.id,
+                category_skill_id=category.categoryId,
+                experience_years=category.experienceYears,
+            )
+
+            db.add(worker_category)
+            # Validate subcategories belong to this category
+            if category.subCategoryIds:
+
+                valid_subs = (
+                    db.query(SubCategorySkillModel.id)
+                    .filter(
+                        SubCategorySkillModel.id.in_(category.subCategoryIds),
+                        SubCategorySkillModel.category_skill_id == category.categoryId,
                     )
+                    .all()
                 )
 
+                valid_sub_ids = {str(v[0]) for v in valid_subs}
+
+                for sub_id in category.subCategoryIds:
+                    if sub_id not in valid_sub_ids:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Invalid subcategory for selected category",
+                        )
+
+                    db.add(
+                        WorkerSubCategoryModel(
+                            worker_id=reg.id,
+                            sub_category_skill_id=sub_id,
+                        )
+                    )
+        # ----------------------------
+        # Documents
+        # ----------------------------
         if worker.documentInfo and worker.documentInfo.documents:
             for doc in worker.documentInfo.documents:
                 db.add(

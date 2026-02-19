@@ -90,7 +90,6 @@ class WorkerSkillCategoryModel(Base):
         nullable=False,
         index=True,
     )
-    category_name = Column(String(150), nullable=True)
 
     # ---- Experience ----
     experience_years = Column(Integer, nullable=True)
@@ -124,7 +123,6 @@ class WorkerSubCategoryModel(Base):
         nullable=False,
         index=True,
     )
-    sub_category_name = Column(String(150), nullable=True)
 
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

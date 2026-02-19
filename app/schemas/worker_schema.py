@@ -21,9 +21,12 @@ class SubCategorySelectionSchema(BaseModel):
             "d1a2b3c4-e5f6-7890-abcd-1234567890ab",
         ],
     )
-    subCategoryNames: Optional[List[str]] = Field(
-        default_factory=list, examples=["Wiring", "Appliance Repair"]
-    )
+
+
+class CategorySelectionSchema(BaseModel):
+    categoryId: str = Field(..., example="123e4567-e89b-12d3-a456-426614174000")
+    experienceYears: Optional[int] = Field(None, example=3)
+    subCategoryIds: List[str] = Field(default_factory=list)
 
 
 # ------------------------
@@ -39,11 +42,7 @@ class WorkerRegistrationSchema(BaseModel):
     authNumber: Optional[str] = Field(None, example="9876543210")
 
     # -------- Skills ---------
-    categoryId: Optional[str] = Field(
-        None, example="cd973909-d6e2-4fa7-be1a-3f8f875220f0"
-    )
-    categoryName: Optional[str] = Field(None, example="Electrical")
-    subCategory: Optional[SubCategorySelectionSchema] = None
+    categories: List[CategorySelectionSchema] = Field(default_factory=list)
 
     # -------- Location ---------
     address: Optional[str] = Field(None, example="123, Anna Nagar, Chennai")
@@ -52,9 +51,6 @@ class WorkerRegistrationSchema(BaseModel):
     pincode: Optional[str] = Field(None, example="600040")
     latitude: Optional[float] = Field(None, example=13.0827)
     longitude: Optional[float] = Field(None, example=80.2707)
-
-    # --------- Experience ---------
-    years: Optional[int] = Field(None, example=3)
 
     # --------- Documents ---------
     documentInfo: Optional[WorkerDocumentInfoSchema] = None
