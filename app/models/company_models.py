@@ -40,6 +40,12 @@ class CompanyModel(Base):
 
     is_active = Column(Boolean, server_default=text("true"))
 
+    bank_details = relationship(
+        "CompanyBankDetailsModel",
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
+
     addresses = relationship(
         "CompanyAddressModel", back_populates="company", cascade="all, delete-orphan"
     )
