@@ -121,4 +121,4 @@ class CompanyBankDetailsModel(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    company = relationship("CompanyModel", backref="bank_details")
+    company = relationship("CompanyModel", back_populates="bank_details")

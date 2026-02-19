@@ -1,9 +1,74 @@
 select * from companies
+select * from company_addresses
+select * from company_documents
+select * from company_bank_details
 select * from industry_types
 select * from category_skills
-select * from sub_category_skills
+select * from sub_category_skills 
+select * from job_postings
+select * from workers
+select * from worker_skill_categories
+select * from worker_skill_subcategories
+select * from worker_documents
+
+
+
+
+-------Temparary Query------------------------
+UPDATE category_skills
+SET tier = 'Tier 1'
+where industry_type_id = 'f029fa9f-0c44-40e0-a426-774c80e44db2'
+
+UPDATE job_postings
+SET experience_required = 2
+where industry_type_id = 'f029fa9f-0c44-40e0-a426-774c80e44db2'
+
+SELECT indexname 
+FROM pg_indexes 
+WHERE indexname = 'idx_job_postings_location';
+
+DROP INDEX IF EXISTS idx_job_postings_location;
+
+
+-------------------------------------------
+
+-- If you want to delete whole table use this command
+TRUNCATE TABLE
+	company_bank_details,
+    company_addresses
+    company_documents,
+    companies
+RESTART IDENTITY;
+
+TRUNCATE TABLE
+    worker_documents,
+	worker_skill_categories
+	worker_skill_subcategories
+    workers
+RESTART IDENTITY;
+
 
 --Prerequsite Commands
+
+CREATE EXTENSION IF NOT EXISTS postgis; --Enable postgis extension inside your database:
+
+--Worker
+ALTER TABLE workers
+ALTER COLUMN id
+SET DEFAULT gen_random_uuid();	
+
+ALTER TABLE workers
+ALTER COLUMN is_active SET DEFAULT true
+
+--Job
+ALTER TABLE job_postings
+ALTER COLUMN id
+SET DEFAULT gen_random_uuid();	
+
+ALTER TABLE job_postings
+ALTER COLUMN is_active SET DEFAULT true
+
+--Company
 ALTER TABLE companies
 ALTER COLUMN id
 SET DEFAULT gen_random_uuid();	
@@ -13,6 +78,10 @@ ALTER COLUMN id
 SET DEFAULT gen_random_uuid();	
 
 ALTER TABLE company_addresses
+ALTER COLUMN id
+SET DEFAULT gen_random_uuid();	
+
+ALTER TABLE company_bank_details
 ALTER COLUMN id
 SET DEFAULT gen_random_uuid();	
 
@@ -30,6 +99,7 @@ SET DEFAULT gen_random_uuid();
 ALTER TABLE sub_category_skills
 ALTER COLUMN id
 SET DEFAULT gen_random_uuid();	
+
 
 -- Industry Types
 INSERT INTO industry_types (name, is_active)
@@ -159,11 +229,10 @@ INSERT INTO category_skills (industry_type_id, name, is_active) VALUES
 ('6abf79ba-6de6-40dc-b215-f68f9f92815b', 'Glass Workers', TRUE),
 ('6abf79ba-6de6-40dc-b215-f68f9f92815b', 'Potters', TRUE);
 
-
-
 ------------ Skill Sub Category ---------------
---Drivers
+
 INSERT INTO sub_category_skills (category_skill_id, name, is_active) VALUES
+--Drivers
 ('cd973909-d6e2-4fa7-be1a-3f8f875220f0', 'Car Driver', TRUE),
 ('cd973909-d6e2-4fa7-be1a-3f8f875220f0', 'Bus Driver', TRUE),
 ('cd973909-d6e2-4fa7-be1a-3f8f875220f0', 'Truck Driver', TRUE),
@@ -171,6 +240,20 @@ INSERT INTO sub_category_skills (category_skill_id, name, is_active) VALUES
 ('cd973909-d6e2-4fa7-be1a-3f8f875220f0', 'Crane Operator', TRUE),
 ('cd973909-d6e2-4fa7-be1a-3f8f875220f0', 'ForkLift Operator', TRUE),
 ('cd973909-d6e2-4fa7-be1a-3f8f875220f0', 'Others', TRUE),
+-- Service Staff
+('76233898-bb2a-44ee-9132-3621c1542ae7', 'Tyre Technician', TRUE),
+('76233898-bb2a-44ee-9132-3621c1542ae7', 'Battery Service Worker', TRUE),
+('76233898-bb2a-44ee-9132-3621c1542ae7', 'Auto Body Repair Technician', TRUE),
+('76233898-bb2a-44ee-9132-3621c1542ae7', 'Others', TRUE),
+-- Support Roles
+('46523588-9705-4534-a9da-1dbd8a83d0b5', 'Vehicle Washer', TRUE),
+('46523588-9705-4534-a9da-1dbd8a83d0b5', 'Garage Helper', TRUE),
+('46523588-9705-4534-a9da-1dbd8a83d0b5', 'Spare Parts Handler', TRUE),
+('46523588-9705-4534-a9da-1dbd8a83d0b5', 'Others', TRUE),
+-- Fuel Station Staff
+('dc5da99e-f074-4902-9628-9b3352a565b6', 'Pump Attendant', TRUE),
+('dc5da99e-f074-4902-9628-9b3352a565b6', 'Air/Water Service Worker', TRUE),
+('dc5da99e-f074-4902-9628-9b3352a565b6', 'Others', TRUE),
 --Mechanics
 ('d06ec5af-afb9-4a49-8f35-a9cb40997a25', 'Two-Wheeler Mechanic', TRUE),
 ('d06ec5af-afb9-4a49-8f35-a9cb40997a25', 'Four-Wheeler Mechanic', TRUE),

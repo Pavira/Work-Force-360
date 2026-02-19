@@ -88,6 +88,7 @@ def create_worker_service(
         reg = WorkerRegistrationModel(
             firebase_uid=firebase_uid,
             name=worker.name,
+            country_code=worker.countryCode,
             auth_number=worker.authNumber,
             category_id=worker.categoryId,
             category_name=worker.categoryName,

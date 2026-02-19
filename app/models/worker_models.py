@@ -8,6 +8,7 @@ from sqlalchemy import (
     Integer,
     Boolean,
     Index,
+    UniqueConstraint,
     func,
     text,
 )
@@ -30,9 +31,11 @@ class WorkerRegistrationModel(Base):
     country_code = Column(String(10), nullable=True)
     auth_number = Column(String(32), nullable=True)
 
-    # ---- Skills ----
-    category_id = Column(UUID(as_uuid=True), nullable=True)
-    category_name = Column(String(150), nullable=True)
+    categories = relationship(
+        "WorkerCategoryModel",
+        back_populates="worker",
+        cascade="all, delete-orphan",
+    )
 
     sub_categories = relationship(
         "WorkerSubCategoryModel",
@@ -46,9 +49,6 @@ class WorkerRegistrationModel(Base):
     state = Column(String(120), nullable=True)
     pincode = Column(String(20), nullable=True)
     location = Column(Geography("POINT", 4326), nullable=True)
-
-    # ---- Experience ----
-    years = Column(Integer, nullable=True)
 
     # ---- Documents ----
     logo_url = Column(Text, nullable=True)
@@ -74,8 +74,8 @@ class WorkerRegistrationModel(Base):
     )
 
 
-class WorkerSubCategoryModel(Base):
-    __tablename__ = "worker_skill_selections"
+class WorkerSkillCategoryModel(Base):
+    __tablename__ = "worker_skill_categories"
 
     id = Column(
         UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
@@ -84,14 +84,59 @@ class WorkerSubCategoryModel(Base):
         UUID(as_uuid=True), ForeignKey("workers.id"), nullable=False, index=True
     )
 
-    sub_category_id = Column(UUID(as_uuid=True), nullable=False)
+    category_skill_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("category_skills.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    category_name = Column(String(150), nullable=True)
+
+    # ---- Experience ----
+    experience_years = Column(Integer, nullable=True)
+
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "worker_id",
+            "category_skill_id",
+            name="uq_worker_category_unique",
+        ),
+    )
+
+
+class WorkerSubCategoryModel(Base):
+    __tablename__ = "worker_skill_subcategories"
+
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    worker_id = Column(
+        UUID(as_uuid=True), ForeignKey("workers.id"), nullable=False, index=True
+    )
+
+    sub_category_skill_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("sub_category_skills.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
     sub_category_name = Column(String(150), nullable=True)
 
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    worker = relationship("WorkerRegistrationModel", back_populates="sub_categories")
+    __table_args__ = (
+        UniqueConstraint(
+            "worker_id",
+            "sub_category_skill_id",
+            name="uq_worker_subcategory_unique",
+        ),
+    )
 
 
 class WorkerDocumentModel(Base):
