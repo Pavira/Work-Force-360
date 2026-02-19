@@ -26,7 +26,13 @@ class SubCategorySelectionSchema(BaseModel):
 class CategorySelectionSchema(BaseModel):
     categoryId: str = Field(..., example="123e4567-e89b-12d3-a456-426614174000")
     experienceYears: Optional[int] = Field(None, example=3)
-    subCategoryIds: List[str] = Field(default_factory=list)
+    subCategoryIds: List[str] = Field(
+        default_factory=list,
+        examples=[
+            "83deb5cd-fc10-4c88-abc0-8d6c2ec85652",
+            "d1a2b3c4-e5f6-7890-abcd-1234567890ab",
+        ],
+    )
 
 
 # ------------------------

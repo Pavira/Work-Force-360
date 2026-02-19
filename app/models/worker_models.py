@@ -105,6 +105,7 @@ class WorkerSkillCategoryModel(Base):
             name="uq_worker_category_unique",
         ),
     )
+    worker = relationship("WorkerRegistrationModel", back_populates="categories")
 
 
 class WorkerSubCategoryModel(Base):
@@ -135,6 +136,7 @@ class WorkerSubCategoryModel(Base):
             name="uq_worker_subcategory_unique",
         ),
     )
+    worker = relationship("WorkerRegistrationModel", back_populates="sub_categories")
 
 
 class WorkerDocumentModel(Base):
