@@ -61,6 +61,9 @@ class WorkerRegistrationModel(Base):
     # ---- Status ----
     status = Column(String(50), default="draft", nullable=False)
     is_active = Column(Boolean, server_default=text("true"))
+    is_online = Column(Boolean, server_default=text("false"))
+    is_available = Column(Boolean, server_default=text("false"))
+    current_job_id = Column(UUID(as_uuid=True), nullable=True)
 
     # ---- Timestamps ----
     created_at = Column(

@@ -1,4 +1,5 @@
 import traceback
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, status
 from fastapi import HTTPException
@@ -9,6 +10,7 @@ from app.core.limiter import limiter
 from app.db.session import get_db
 from app.schemas.job_schema import JobPostingSchema
 from app.services.job_service import (
+    accept_job_service,
     create_job_post_service,
     get_all_job_posts_service,
     get_job_post_by_id_service,
@@ -95,3 +97,21 @@ def get_job_post_by_id(request: Request, job_id: str, db: Session = Depends(get_
 
 
 # ------------------------END GET Job Post By ID Route ------------------------
+
+
+#
+@router.post("/jobs/{job_id}/accept")
+@limiter.limit("30/minute")
+def accept_job(
+    request: Request,
+    job_id: UUID,
+    worker_id: UUID,
+    db: Session = Depends(get_db),
+):
+    result = accept_job_service(job_id=job_id, worker_id=worker_id, db=db)
+    return custom_response(
+        success=True,
+        message="Job assigned successfully",
+        data=result,
+        code=status.HTTP_200_OK,
+    )

@@ -1,13 +1,17 @@
+import asyncio
 import traceback
 from uuid import UUID
 
 from fastapi import HTTPException, status
 from geoalchemy2.shape import from_shape, to_shape
 from shapely.geometry import Point
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.job_model import JobPostingModel
+from app.models.worker_models import WorkerRegistrationModel
 from app.schemas.job_schema import JobPostingSchema
+from app.services.matching_service import run_matching
 
 
 def create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
@@ -46,6 +50,8 @@ def create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
         )
         db.add(job)
         db.flush()
+
+        asyncio.create_task(run_matching(job.id))
 
         return {
             "id": str(job.id),
@@ -171,3 +177,47 @@ def get_job_post_by_id_service(job_id: str, db: Session) -> dict:
 
 
 # ------------------------END GET Job Post By ID Service ------------------------
+
+
+# ------------------------Accept Job Service ------------------------
+def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict:
+    try:
+        updated = (
+            db.query(JobPostingModel)
+            .filter(
+                JobPostingModel.id == job_id,
+                JobPostingModel.status == "searching",
+            )
+            .update(
+                {
+                    "status": "assigned",
+                    "assigned_worker_id": worker_id,
+                    "assigned_at": func.now(),
+                }
+            )
+        )
+
+        if updated == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Job already taken",
+            )
+
+        db.query(WorkerRegistrationModel).filter(
+            WorkerRegistrationModel.id == worker_id
+        ).update({"is_available": False, "current_job_id": job_id})
+
+        db.flush()
+        return {"message": "Job Assigned"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("accept_job_service DB ERROR:", str(e))
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error accepting job",
+        )
+
+
+# ------------------------END Accept Job Service ------------------------

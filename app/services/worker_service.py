@@ -8,7 +8,7 @@ from geoalchemy2.shape import from_shape, to_shape
 from shapely.geometry import Point
 from sqlalchemy.orm import Session, selectinload
 
-from app.models.industry_skill_models import SubCategorySkillModel
+from app.models.industry_skill_models import CategorySkillModel, SubCategorySkillModel
 from app.models.worker_models import (
     WorkerDocumentModel,
     WorkerRegistrationModel,
@@ -201,7 +201,9 @@ def get_worker_profile_service(
         worker = (
             db.query(WorkerRegistrationModel)
             .options(
+                selectinload(WorkerRegistrationModel.categories),
                 selectinload(WorkerRegistrationModel.sub_categories),
+                selectinload(WorkerRegistrationModel.documents),
             )
             .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
             .first()
@@ -213,27 +215,86 @@ def get_worker_profile_service(
                 detail="Worker profile not found",
             )
 
+        # point = to_shape(worker.location) if worker.location else None
+
+        category_ids = [c.category_skill_id for c in worker.categories]
+        sub_category_ids = [s.sub_category_skill_id for s in worker.sub_categories]
+
+        category_rows = (
+            db.query(CategorySkillModel.id, CategorySkillModel.name)
+            .filter(CategorySkillModel.id.in_(category_ids))
+            .all()
+            if category_ids
+            else []
+        )
+        sub_category_rows = (
+            db.query(
+                SubCategorySkillModel.id,
+                SubCategorySkillModel.name,
+                SubCategorySkillModel.category_skill_id,
+            )
+            .filter(SubCategorySkillModel.id.in_(sub_category_ids))
+            .all()
+            if sub_category_ids
+            else []
+        )
+
+        category_name_map = {row.id: row.name for row in category_rows}
+        sub_category_map = {
+            row.id: {"name": row.name, "category_skill_id": row.category_skill_id}
+            for row in sub_category_rows
+        }
+
+        categories = []
+        for category in worker.categories:
+            matched_sub_ids = []
+            matched_sub_names = []
+            for sub in worker.sub_categories:
+                sub_data = sub_category_map.get(sub.sub_category_skill_id)
+                if not sub_data:
+                    continue
+                if sub_data["category_skill_id"] == category.category_skill_id:
+                    matched_sub_ids.append(str(sub.sub_category_skill_id))
+                    matched_sub_names.append(sub_data["name"])
+
+            categories.append(
+                {
+                    "categoryId": str(category.category_skill_id),
+                    "categoryName": category_name_map.get(category.category_skill_id),
+                    "experienceYears": category.experience_years,
+                    "subCategoryIds": matched_sub_ids,
+                    "subCategoryNames": matched_sub_names,
+                }
+            )
+
         return {
-            "id": worker.id,
+            "id": str(worker.id),
             "firebase_uid": worker.firebase_uid,
             "name": worker.name,
+            "countryCode": worker.country_code,
             "authNumber": worker.auth_number,
             "logoUrl": worker.logo_url,
-            "categoryId": worker.category_id,
-            "categoryName": worker.category_name,
-            "subCategory": {
-                "subCategoryIds": [sc.sub_category_id for sc in worker.sub_categories],
-                "subCategoryNames": [
-                    sc.sub_category_name for sc in worker.sub_categories
-                ],
-            },
+            "categories": categories,
             "address": worker.address,
             "city": worker.city,
             "state": worker.state,
             "pincode": worker.pincode,
-            "years": worker.years,
+            # "latitude": point.y if point else None,
+            # "longitude": point.x if point else None,
+            "documents": [
+                {
+                    "documentType": d.document_type,
+                    "documentUrl": d.document_url,
+                }
+                for d in worker.documents
+            ],
             "status": worker.status,
             "is_active": worker.is_active,
+            "is_online": worker.is_online,
+            "is_available": worker.is_available,
+            "currentJobId": (
+                str(worker.current_job_id) if worker.current_job_id else None
+            ),
             "created_at": worker.created_at,
             "updated_at": worker.updated_at,
         }

@@ -73,8 +73,16 @@ class JobPostingModel(Base):
     special_instructions = Column(Text, nullable=True)
 
     # ---- Status ----
-    status = Column(String, default="posted", nullable=False)
+    status = Column(String, default="searching", nullable=False)
     is_active = Column(Boolean, server_default=text("true"))
+
+    # ---- Assignments ----
+    assigned_worker_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("workers.id"),
+        nullable=True,
+        index=True,
+    )
 
     # ---- Timestamps ----
     posted_at = Column(
