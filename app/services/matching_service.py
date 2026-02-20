@@ -53,6 +53,10 @@ async def run_matching(job_id: int):
 
             job = db.query(JobPostingModel).filter(JobPostingModel.id == job_id).first()
 
+            print("DEBUG JOB:", job)
+            if job:
+                print("DEBUG STATUS:", job.status, "| TYPE:", type(job.status))
+
             # Stop if job already accepted or cancelled
             if not job or job.status != "searching":
                 print("🛑 Job no longer searching. Stopping matching.")
