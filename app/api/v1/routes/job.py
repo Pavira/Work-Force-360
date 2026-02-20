@@ -1,3 +1,4 @@
+import asyncio
 import traceback
 from uuid import UUID
 
@@ -15,6 +16,7 @@ from app.services.job_service import (
     get_all_job_posts_service,
     get_job_post_by_id_service,
 )
+from app.services.matching_service import run_matching
 from app.utils.response import custom_response
 
 
@@ -24,7 +26,7 @@ router = APIRouter()
 # ------------------------ Job Post Route ------------------------
 @router.post("/create_job_post", status_code=status.HTTP_201_CREATED)
 @limiter.limit("30/minute")
-def create_job_post(
+async def create_job_post(
     request: Request,
     payload: JobPostingSchema,
     db: Session = Depends(get_db),
@@ -35,23 +37,21 @@ def create_job_post(
     """
     try:
         job = create_job_post_service(payload=payload, db=db)
-    except HTTPException as e:
-        print("create_job_post HTTPException:", e.detail)
-        print("create_job_post payload:", payload.model_dump())
-        traceback.print_exc()
+        # 🔥 Start matching in background (non-blocking)
+        asyncio.create_task(run_matching(job["id"]))
+
+        return custom_response(
+            success=True,
+            message="Job post created successfully",
+            data=job,
+            code=status.HTTP_201_CREATED,
+        )
+
+    except HTTPException:
         raise
     except Exception as e:
-        print("create_job_post unexpected error:", str(e))
-        print("create_job_post payload:", payload.model_dump())
         traceback.print_exc()
         raise
-
-    return custom_response(
-        success=True,
-        message="Job post created successfully",
-        data=job,
-        code=status.HTTP_201_CREATED,
-    )
 
 
 # ------------------------END Job Post Route ------------------------

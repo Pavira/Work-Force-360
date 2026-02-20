@@ -14,7 +14,7 @@ from app.schemas.job_schema import JobPostingSchema
 from app.services.matching_service import run_matching
 
 
-def create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
+async def create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
     try:
         location = from_shape(
             Point(payload.longitude, payload.latitude),  # lng, lat order
@@ -50,8 +50,7 @@ def create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
         )
         db.add(job)
         db.flush()
-
-        asyncio.create_task(run_matching(job.id))
+        db.refresh(job)
 
         return {
             "id": str(job.id),

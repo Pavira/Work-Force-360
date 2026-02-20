@@ -45,6 +45,7 @@ def find_matching_workers(db, job):
 
 
 async def run_matching(job_id: int):
+    print(f"\n🚀 Starting matching for Job {job_id}\n")
 
     for attempt in range(MAX_ATTEMPTS):
 
@@ -54,16 +55,16 @@ async def run_matching(job_id: int):
 
             # Stop if job already accepted or cancelled
             if not job or job.status != "searching":
+                print("🛑 Job no longer searching. Stopping matching.")
                 return
 
             workers = find_matching_workers(db, job)
+            print(f"\n🔎 Attempt {attempt+1}/{MAX_ATTEMPTS}")
 
             if workers:
-                print(f"[Matching] Attempt {attempt+1}: Found {len(workers)} workers")
-                # print the worker ids
-                print(
-                    f"[Matching] Worker IDs: {[str(worker.id) + ' - ' + worker.name for worker in workers]}"
-                )
+                print(f"✅ Found {len(workers)} workers:")
+                for worker in workers:
+                    print(f"   - {worker.id} | {worker.name}")
 
             # Send Message to top 5 workers
             # print(f"[Matching] Attempt {attempt+1}: Sending to workers")

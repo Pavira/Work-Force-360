@@ -10,8 +10,7 @@ select * from workers
 select * from worker_skill_categories
 select * from worker_skill_subcategories
 select * from worker_documents
-
-
+	
 
 -------Temparary Query------------------------
 UPDATE category_skills
@@ -34,7 +33,7 @@ DROP INDEX IF EXISTS idx_job_postings_location;
 -- If you want to delete whole table use this command
 TRUNCATE TABLE
 	company_bank_details,
-    company_addresses
+    company_addresses,
     company_documents,
     companies
 RESTART IDENTITY;
