@@ -46,7 +46,6 @@ async def create_job_post(
     try:
         job = await create_job_post_service(payload=payload, db=db)
 
-        await asyncio.sleep(0)
         # 🔥 Start matching in background (non-blocking)
         asyncio.create_task(start_matching(job["id"]))
 
