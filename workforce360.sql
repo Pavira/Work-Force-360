@@ -43,7 +43,8 @@ TRUNCATE TABLE
     worker_documents,
 	worker_skill_categories,
 	worker_skill_subcategories,
-    workers
+    workers,
+	job_postings
 RESTART IDENTITY;
 
 

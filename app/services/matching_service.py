@@ -10,14 +10,12 @@ from app.models.worker_models import (
 
 # Configuration
 RADIUS_METERS = 20000  # 20km
-MAX_RETRIES = 3
-RETRY_DELAY = 10  # seconds
+RETRY_DELAY = 5  # seconds
+TOTAL_RETRY_TIME = 60  # 3 minutes
+MAX_ATTEMPTS = TOTAL_RETRY_TIME // RETRY_DELAY  # 12 attempts over 3 minutes
 
 
 def find_matching_workers(db, job):
-    """
-    Returns top nearby available workers for the job.
-    """
     return (
         db.query(WorkerRegistrationModel)
         .join(
@@ -26,8 +24,8 @@ def find_matching_workers(db, job):
         )
         .filter(
             WorkerRegistrationModel.is_active.is_(True),
-            # WorkerRegistrationModel.is_online.is_(True),
-            WorkerRegistrationModel.is_available.is_(True),
+            WorkerRegistrationModel.is_online.is_(False),
+            WorkerRegistrationModel.is_available.is_(False),
             WorkerSubCategoryModel.sub_category_skill_id == job.sub_category_id,
             func.ST_DWithin(
                 WorkerRegistrationModel.location,
@@ -47,54 +45,63 @@ def find_matching_workers(db, job):
 
 
 async def run_matching(job_id: int):
-    """
-    Main matching loop.
-    Tries MAX_RETRIES times before stopping.
-    """
 
-    for attempt in range(MAX_RETRIES):
+    for attempt in range(MAX_ATTEMPTS):
 
-        # 🔹 Single DB session per iteration
         with SessionLocal() as db:
 
             job = db.query(JobPostingModel).filter(JobPostingModel.id == job_id).first()
 
-            # Stop if job already assigned or cancelled
+            # Stop if job already accepted or cancelled
             if not job or job.status != "searching":
                 return
 
             workers = find_matching_workers(db, job)
 
-            # If no workers found → wait and retry
-            if not workers:
-                print(f"[Matching] Attempt {attempt+1}: No workers found.")
-                await asyncio.sleep(RETRY_DELAY)
-                continue
-
-            print(f"[Matching] Attempt {attempt+1}: Found {len(workers)} workers.")
-
-            # Send job to top 5 workers
-            for worker in workers[:10]:
-                await manager.send_job(
-                    worker.id,
-                    {
-                        "job_id": str(job.id),
-                        "wage": job.wage,
-                        "message": "New Job Nearby",
-                    },
+            if workers:
+                print(f"[Matching] Attempt {attempt+1}: Found {len(workers)} workers")
+                # print the worker ids
+                print(
+                    f"[Matching] Worker IDs: {[str(worker.id) + ' - ' + worker.name for worker in workers]}"
                 )
 
-        # 🔹 Wait for worker acceptance
+            # Send Message to top 5 workers
+            # print(f"[Matching] Attempt {attempt+1}: Sending to workers")
+
+            # # Send to top 5 workers
+            # for worker in workers[:5]:
+            #     await manager.send_job(
+            #         worker.id,
+            #         {
+            #             "job_id": str(job.id),
+            #             "wage": job.wage,
+            #             "message": "New Job Nearby",
+            #         },
+            #     )
+            else:
+                print(f"[Matching] Attempt {attempt+1}: No workers found")
+
+        # Wait before next retry
         await asyncio.sleep(RETRY_DELAY)
 
-        # 🔹 Check again if job was accepted
-        with SessionLocal() as db:
-            updated_job = (
-                db.query(JobPostingModel).filter(JobPostingModel.id == job_id).first()
-            )
+    # 🔴 If we reach here → 3 minutes passed
+    with SessionLocal() as db:
+        job = db.query(JobPostingModel).filter(JobPostingModel.id == job_id).first()
 
-            if updated_job and updated_job.status != "searching":
-                print("[Matching] Job accepted. Stopping retries.")
-                return
+        if job and job.status == "searching":
+            job.status = "no_match"
+            db.commit()
 
-    print("[Matching] Max retries reached. No worker accepted.")
+            print("[Matching] 3 minutes passed. No worker accepted.")
+            return
+
+            # Notify customer
+            # await manager.notify_customer(
+            #     job.customer_id,
+            #     {
+            #         "job_id": str(job.id),
+            #         "message": "Sorry, no worker matched your request.",
+            #     },
+            # )
+
+    print("[Matching] 3 minutes passed. No worker accepted.")

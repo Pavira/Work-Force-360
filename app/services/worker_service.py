@@ -317,27 +317,101 @@ def get_all_worker_details_service(
     db: Session,
 ) -> list[dict]:
     try:
-        workers = db.query(WorkerRegistrationModel).all()
+        workers = (
+            db.query(WorkerRegistrationModel)
+            .options(
+                selectinload(WorkerRegistrationModel.categories),
+                selectinload(WorkerRegistrationModel.sub_categories),
+            )
+            .all()
+        )
+
+        category_ids = {
+            category.category_skill_id
+            for worker in workers
+            for category in worker.categories
+        }
+        sub_category_ids = {
+            sub.sub_category_skill_id for worker in workers for sub in worker.sub_categories
+        }
+
+        category_rows = (
+            db.query(CategorySkillModel.id, CategorySkillModel.name)
+            .filter(CategorySkillModel.id.in_(category_ids))
+            .all()
+            if category_ids
+            else []
+        )
+        sub_category_rows = (
+            db.query(
+                SubCategorySkillModel.id,
+                SubCategorySkillModel.name,
+                SubCategorySkillModel.category_skill_id,
+            )
+            .filter(SubCategorySkillModel.id.in_(sub_category_ids))
+            .all()
+            if sub_category_ids
+            else []
+        )
+
+        category_name_map = {row.id: row.name for row in category_rows}
+        sub_category_map = {
+            row.id: {"name": row.name, "category_skill_id": row.category_skill_id}
+            for row in sub_category_rows
+        }
 
         worker_details = []
         for worker in workers:
             # point = to_shape(worker.location) if worker.location else None
+            categories = []
+            category_ids_for_worker = []
+            category_names_for_worker = []
+            years_for_worker = []
+
+            for category in worker.categories:
+                matched_sub_ids = []
+                matched_sub_names = []
+                for sub in worker.sub_categories:
+                    sub_data = sub_category_map.get(sub.sub_category_skill_id)
+                    if not sub_data:
+                        continue
+                    if sub_data["category_skill_id"] == category.category_skill_id:
+                        matched_sub_ids.append(str(sub.sub_category_skill_id))
+                        matched_sub_names.append(sub_data["name"])
+
+                categories.append(
+                    {
+                        "categoryId": str(category.category_skill_id),
+                        "categoryName": category_name_map.get(category.category_skill_id),
+                        "experienceYears": category.experience_years,
+                        "subCategoryIds": matched_sub_ids,
+                        "subCategoryNames": matched_sub_names,
+                    }
+                )
+
+                category_ids_for_worker.append(str(category.category_skill_id))
+                category_names_for_worker.append(
+                    category_name_map.get(category.category_skill_id)
+                )
+                years_for_worker.append(category.experience_years)
+
             worker_details.append(
                 {
-                    "id": worker.id,
+                    "id": str(worker.id),
                     "firebase_uid": worker.firebase_uid,
                     "name": worker.name,
                     "country_code": worker.country_code,
                     "authNumber": worker.auth_number,
-                    "categoryId": worker.category_id,
-                    "categoryName": worker.category_name,
+                    "categoryId": category_ids_for_worker,
+                    "categoryName": category_names_for_worker,
                     "address": worker.address,
                     "city": worker.city,
                     "state": worker.state,
                     "pincode": worker.pincode,
                     # "latitude": (point.y if point else None),
                     # "longitude": (point.x if point else None),
-                    "years": worker.years,
+                    "years": years_for_worker,
+                    "categories": categories,
                     "logoUrl": worker.logo_url,
                     "status": worker.status,
                     "is_active": worker.is_active,
