@@ -49,15 +49,12 @@ async def create_job_post_service(payload: JobPostingSchema, db: Session) -> dic
             special_instructions=payload.specialInstructions,
         )
         db.add(job)
-        db.commit()  # 🔥 COMMIT HERE
-        db.refresh(job)
+        db.flush()
 
         return {
             "id": job.id,
         }
 
-    except Exception:
-        db.rollback()
         raise
     except HTTPException:
         raise
