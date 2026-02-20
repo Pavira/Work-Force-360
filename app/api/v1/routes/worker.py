@@ -10,6 +10,7 @@ from app.db.session import get_db
 from app.schemas.company_schema import UploadUrlRequest
 from app.schemas.worker_schema import (
     WorkerAddressUpdateSchema,
+    WorkerBankDetailsSchema,
     WorkerDocumentCreateSchema,
     WorkerLogoUpdateSchema,
     WorkerRegistrationSchema,
@@ -17,12 +18,14 @@ from app.schemas.worker_schema import (
 from app.services.worker_service import (
     add_document_against_worker_id_and_type_service,
     create_worker_service,
+    create_worker_bank_details_service,
     delete_worker_profile_service,
     generate_upload_url_service,
     get_all_worker_details_service,
     get_worker_documents_by_type_service,
     get_worker_profile_service,
     get_worker_terms_and_conditions,
+    update_worker_bank_details_service,
     update_worker_logo_service,
     update_worker_address_service,
     worker_name_and_status_service,
@@ -360,6 +363,74 @@ def update_worker_address(
 
 
 # -----------------------End Update Worker Address----------------------- #
+
+
+# -----------------------Create Worker Bank Details----------------------- #
+@router.post(
+    "/create_worker_bank_details",
+    status_code=status.HTTP_201_CREATED,
+)
+@limiter.limit("30/minute")
+def create_worker_bank_details(
+    request: Request,  # REQUIRED by SlowAPI
+    bank_details: WorkerBankDetailsSchema,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Create worker bank details (Firebase authenticated).
+    """
+    bank_db = create_worker_bank_details_service(
+        bank_details=bank_details,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker bank details created successfully",
+        data={
+            "id": bank_db.id,
+        },
+        code=status.HTTP_201_CREATED,
+    )
+
+
+# -----------------------End Create Worker Bank Details----------------------- #
+
+
+# -----------------------Update Worker Bank Details----------------------- #
+@router.patch(
+    "/update_worker_bank_details",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def update_worker_bank_details(
+    request: Request,  # REQUIRED by SlowAPI
+    bank_details: WorkerBankDetailsSchema,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Update worker bank details (Firebase authenticated).
+    """
+    bank_db = update_worker_bank_details_service(
+        bank_details=bank_details,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker bank details updated successfully",
+        data={
+            "id": bank_db.id,
+        },
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Update Worker Bank Details----------------------- #
 
 
 # -----------------------Fetch Worker Terms and Conditions----------------------- #

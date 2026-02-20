@@ -24,6 +24,14 @@ router = APIRouter()
 
 
 # ------------------------ Job Post Route ------------------------
+
+
+async def start_matching(job_id: UUID):
+    # Force execution AFTER response lifecycle
+    await asyncio.sleep(0.1)
+    await run_matching(job_id)
+
+
 @router.post("/create_job_post", status_code=status.HTTP_201_CREATED)
 @limiter.limit("30/minute")
 async def create_job_post(
@@ -37,8 +45,10 @@ async def create_job_post(
     """
     try:
         job = await create_job_post_service(payload=payload, db=db)
+
+        await asyncio.sleep(0)
         # 🔥 Start matching in background (non-blocking)
-        asyncio.create_task(run_matching(job["id"]))
+        asyncio.create_task(start_matching(job["id"]))
 
         return custom_response(
             success=True,

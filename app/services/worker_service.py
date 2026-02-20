@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models.industry_skill_models import CategorySkillModel, SubCategorySkillModel
 from app.models.worker_models import (
+    WorkerBankDetailsModel,
     WorkerDocumentModel,
     WorkerRegistrationModel,
     WorkerSkillCategoryModel,
@@ -17,6 +18,7 @@ from app.models.worker_models import (
 )
 from app.schemas.worker_schema import (
     WorkerAddressUpdateSchema,
+    WorkerBankDetailsSchema,
     WorkerDocumentCreateSchema,
     WorkerRegistrationSchema,
 )
@@ -204,6 +206,7 @@ def get_worker_profile_service(
                 selectinload(WorkerRegistrationModel.categories),
                 selectinload(WorkerRegistrationModel.sub_categories),
                 selectinload(WorkerRegistrationModel.documents),
+                selectinload(WorkerRegistrationModel.bank_details),
             )
             .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
             .first()
@@ -287,6 +290,16 @@ def get_worker_profile_service(
                     "documentUrl": d.document_url,
                 }
                 for d in worker.documents
+            ],
+            "bank_details": [
+                {
+                    "bank_name": bank.bank_name,
+                    "account_holder_name": bank.account_holder_name,
+                    "account_number": bank.account_number,
+                    "ifsc_code": bank.ifsc_code,
+                    "upi_id": bank.upi_id,
+                }
+                for bank in worker.bank_details
             ],
             "status": worker.status,
             "is_active": worker.is_active,
@@ -458,6 +471,10 @@ def delete_worker_profile_service(
 
         db.query(WorkerDocumentModel).filter(
             WorkerDocumentModel.worker_id == worker.id
+        ).delete()
+
+        db.query(WorkerBankDetailsModel).filter(
+            WorkerBankDetailsModel.worker_id == worker.id
         ).delete()
 
         db.delete(worker)
@@ -680,6 +697,104 @@ def update_worker_address_service(
 
 
 # -----------------------End Update Worker Address Service ----------------------- #
+
+
+# -----------------------Create Worker Bank Details Service----------------------- #
+def create_worker_bank_details_service(
+    firebase_uid: str,
+    bank_details: WorkerBankDetailsSchema,
+    db: Session,
+) -> WorkerRegistrationModel:
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        new_worker_bank = WorkerBankDetailsModel(
+            worker_id=worker.id,
+            bank_name=bank_details.bankName,
+            account_holder_name=bank_details.accountHolderName,
+            account_number=bank_details.accountNumber,
+            ifsc_code=bank_details.ifscCode,
+            upi_id=bank_details.upiId,
+        )
+        db.add(new_worker_bank)
+        db.flush()
+
+        return worker
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR =>", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error creating worker bank details",
+        )
+
+
+# -----------------------End Create Worker Bank Details Service----------------------- #
+
+
+# -----------------------Update Worker Bank Details Service----------------------- #
+def update_worker_bank_details_service(
+    firebase_uid: str,
+    bank_details: WorkerBankDetailsSchema,
+    db: Session,
+) -> WorkerRegistrationModel:
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        worker_bank = (
+            db.query(WorkerBankDetailsModel)
+            .filter(WorkerBankDetailsModel.worker_id == worker.id)
+            .first()
+        )
+
+        if not worker_bank:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker bank details not found",
+            )
+
+        worker_bank.bank_name = bank_details.bankName
+        worker_bank.account_holder_name = bank_details.accountHolderName
+        worker_bank.account_number = bank_details.accountNumber
+        worker_bank.ifsc_code = bank_details.ifscCode
+        worker_bank.upi_id = bank_details.upiId
+
+        db.flush()
+        return worker
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR =>", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating worker bank details",
+        )
+
+
+# -----------------------End Update Worker Bank Details Service----------------------- #
 
 
 # # -----------------------Generate S3 Upload URL Service----------------------- #

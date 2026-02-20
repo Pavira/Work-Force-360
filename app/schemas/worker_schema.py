@@ -73,3 +73,11 @@ class WorkerAddressUpdateSchema(BaseModel):
 
 class WorkerLogoUpdateSchema(BaseModel):
     logo_url: str | None = None
+
+
+class WorkerBankDetailsSchema(BaseModel):
+    bankName: Optional[str] = None
+    accountHolderName: Optional[str] = None
+    accountNumber: Optional[str] = None
+    ifscCode: Optional[str] = None
+    upiId: Optional[str] = None

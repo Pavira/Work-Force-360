@@ -1,4 +1,5 @@
 import asyncio
+from uuid import UUID
 from sqlalchemy import func
 from app.core.websocket import manager
 from app.db.session import SessionLocal
@@ -44,7 +45,7 @@ def find_matching_workers(db, job):
     )
 
 
-async def run_matching(job_id: int):
+async def run_matching(job_id: UUID):
     print(f"\n🚀 Starting matching for Job {job_id}\n")
 
     for attempt in range(MAX_ATTEMPTS):

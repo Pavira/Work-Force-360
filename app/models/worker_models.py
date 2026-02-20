@@ -57,6 +57,12 @@ class WorkerRegistrationModel(Base):
         back_populates="worker",
         cascade="all, delete-orphan",
     )
+    # ---- Bank Details ----
+    bank_details = relationship(
+        "WorkerBankDetailsModel",
+        back_populates="worker",
+        cascade="all, delete-orphan",
+    )
 
     # ---- Status ----
     status = Column(String(50), default="draft", nullable=False)
@@ -160,3 +166,26 @@ class WorkerDocumentModel(Base):
     )
 
     worker = relationship("WorkerRegistrationModel", back_populates="documents")
+
+
+class WorkerBankDetailsModel(Base):
+    __tablename__ = "worker_bank_details"
+
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    worker_id = Column(
+        UUID(as_uuid=True), ForeignKey("workers.id"), nullable=False, index=True
+    )
+
+    bank_name = Column(String, nullable=True)
+    account_holder_name = Column(String, nullable=True)
+    account_number = Column(String, nullable=True)
+    ifsc_code = Column(String, nullable=True)
+    upi_id = Column(String, nullable=True)
+
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    worker = relationship("WorkerRegistrationModel", back_populates="bank_details")
