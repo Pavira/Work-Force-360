@@ -55,7 +55,6 @@ async def create_job_post_service(payload: JobPostingSchema, db: Session) -> dic
             "id": job.id,
         }
 
-        raise
     except HTTPException:
         raise
     except Exception as e:
