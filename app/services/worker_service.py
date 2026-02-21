@@ -17,6 +17,7 @@ from app.models.worker_models import (
     WorkerSubCategoryModel,
 )
 from app.schemas.worker_schema import (
+    CategorySelectionSchema,
     WorkerAddressUpdateSchema,
     WorkerBankDetailsSchema,
     WorkerDocumentCreateSchema,
@@ -808,6 +809,107 @@ def update_worker_skills_service(
 
 
 # -----------------------End Update Worker Skills Service ----------------------- #
+
+
+# -----------------------Add Worker Skill Category Service----------------------- #
+def add_worker_skill_category_service(
+    firebase_uid: str,
+    category: CategorySelectionSchema,
+    db: Session,
+) -> dict:
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        valid_category = (
+            db.query(CategorySkillModel.id)
+            .filter(CategorySkillModel.id == category.categoryId)
+            .first()
+        )
+        if not valid_category:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid category id provided",
+            )
+
+        existing_worker_category = (
+            db.query(WorkerSkillCategoryModel)
+            .filter(
+                WorkerSkillCategoryModel.worker_id == worker.id,
+                WorkerSkillCategoryModel.category_skill_id == category.categoryId,
+            )
+            .first()
+        )
+        if existing_worker_category:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Category already exists for worker",
+            )
+
+        if len(category.subCategoryIds) != len(set(category.subCategoryIds)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Duplicate subcategory ids are not allowed",
+            )
+
+        db.add(
+            WorkerSkillCategoryModel(
+                worker_id=worker.id,
+                category_skill_id=category.categoryId,
+                experience_years=category.experienceYears,
+            )
+        )
+
+        if category.subCategoryIds:
+            valid_sub_categories = (
+                db.query(SubCategorySkillModel.id)
+                .filter(
+                    SubCategorySkillModel.id.in_(category.subCategoryIds),
+                    SubCategorySkillModel.category_skill_id == category.categoryId,
+                )
+                .all()
+            )
+            valid_sub_ids = {str(row[0]) for row in valid_sub_categories}
+
+            for sub_category_id in category.subCategoryIds:
+                if sub_category_id not in valid_sub_ids:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Invalid subcategory for selected category",
+                    )
+                db.add(
+                    WorkerSubCategoryModel(
+                        worker_id=worker.id,
+                        sub_category_skill_id=sub_category_id,
+                    )
+                )
+
+        db.flush()
+        return {
+            "worker_id": str(worker.id),
+            "category_id": str(category.categoryId),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR =>", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error adding worker skill category",
+        )
+
+
+# -----------------------End Add Worker Skill Category Service----------------------- #
 
 
 # -----------------------Delete Worker Skill Category Service----------------------- #

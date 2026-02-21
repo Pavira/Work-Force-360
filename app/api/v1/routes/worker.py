@@ -9,6 +9,7 @@ from app.core.limiter import limiter
 from app.db.session import get_db
 from app.schemas.company_schema import UploadUrlRequest
 from app.schemas.worker_schema import (
+    CategorySelectionSchema,
     WorkerAddressUpdateSchema,
     WorkerBankDetailsSchema,
     WorkerDocumentCreateSchema,
@@ -17,6 +18,7 @@ from app.schemas.worker_schema import (
     WorkerSkillsUpdateSchema,
 )
 from app.services.worker_service import (
+    add_worker_skill_category_service,
     add_document_against_worker_id_and_type_service,
     create_worker_service,
     create_worker_bank_details_service,
@@ -397,6 +399,35 @@ def update_worker_skills(
 
 
 # -----------------------End Update Worker Skills----------------------- #
+
+
+# -----------------------Add Worker Skill Category----------------------- #
+@router.post("/add_skill_category_against_worker_id", status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
+def add_skill_category_against_worker_id(
+    request: Request,  # REQUIRED by SlowAPI
+    category: CategorySelectionSchema,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Add a new skill category (and related sub-categories) for worker (Firebase authenticated).
+    """
+    payload = add_worker_skill_category_service(
+        category=category,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker skill category added successfully",
+        data=payload,
+        code=status.HTTP_201_CREATED,
+    )
+
+
+# -----------------------End Add Worker Skill Category----------------------- #
 
 
 # -----------------------Delete Worker Skill Category----------------------- #
