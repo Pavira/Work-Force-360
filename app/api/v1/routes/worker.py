@@ -14,11 +14,13 @@ from app.schemas.worker_schema import (
     WorkerDocumentCreateSchema,
     WorkerLogoUpdateSchema,
     WorkerRegistrationSchema,
+    WorkerSkillsUpdateSchema,
 )
 from app.services.worker_service import (
     add_document_against_worker_id_and_type_service,
     create_worker_service,
     create_worker_bank_details_service,
+    delete_worker_skill_category_service,
     delete_worker_profile_service,
     generate_upload_url_service,
     get_all_worker_details_service,
@@ -28,6 +30,7 @@ from app.services.worker_service import (
     update_worker_bank_details_service,
     update_worker_logo_service,
     update_worker_address_service,
+    update_worker_skills_service,
     worker_name_and_status_service,
     worker_profile_exist_service,
 )
@@ -363,6 +366,66 @@ def update_worker_address(
 
 
 # -----------------------End Update Worker Address----------------------- #
+
+
+# -----------------------Update Worker Skills----------------------- #
+@router.patch("/update_worker_skills", status_code=status.HTTP_200_OK)
+@limiter.limit("30/minute")
+def update_worker_skills(
+    request: Request,  # REQUIRED by SlowAPI
+    skills: WorkerSkillsUpdateSchema,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Update worker skill category and sub-category mappings (Firebase authenticated).
+    """
+    worker = update_worker_skills_service(
+        skills=skills,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker skills updated successfully",
+        data={
+            "id": worker.id,
+        },
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Update Worker Skills----------------------- #
+
+
+# -----------------------Delete Worker Skill Category----------------------- #
+@router.delete("/delete_worker_skill_category/{category_id}", status_code=status.HTTP_200_OK)
+@limiter.limit("30/minute")
+def delete_worker_skill_category(
+    request: Request,  # REQUIRED by SlowAPI
+    category_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Delete a worker category and all related worker sub-categories (Firebase authenticated).
+    """
+    payload = delete_worker_skill_category_service(
+        category_id=category_id,
+        firebase_uid=current_user["uid"],
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker category deleted successfully",
+        data=payload,
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Delete Worker Skill Category----------------------- #
 
 
 # -----------------------Create Worker Bank Details----------------------- #

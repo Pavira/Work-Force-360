@@ -72,7 +72,7 @@ class WorkerAddressUpdateSchema(BaseModel):
 
 
 class WorkerLogoUpdateSchema(BaseModel):
-    logo_url: str | None = None
+    logo_url: str
 
 
 class WorkerBankDetailsSchema(BaseModel):
@@ -81,3 +81,7 @@ class WorkerBankDetailsSchema(BaseModel):
     accountNumber: Optional[str] = None
     ifscCode: Optional[str] = None
     upiId: Optional[str] = None
+
+
+class WorkerSkillsUpdateSchema(BaseModel):
+    categories: List[CategorySelectionSchema] = Field(default_factory=list)

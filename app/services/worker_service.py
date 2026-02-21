@@ -21,6 +21,7 @@ from app.schemas.worker_schema import (
     WorkerBankDetailsSchema,
     WorkerDocumentCreateSchema,
     WorkerRegistrationSchema,
+    WorkerSkillsUpdateSchema,
 )
 
 
@@ -335,6 +336,7 @@ def get_all_worker_details_service(
             .options(
                 selectinload(WorkerRegistrationModel.categories),
                 selectinload(WorkerRegistrationModel.sub_categories),
+                selectinload(WorkerBankDetailsModel.bank_details),
             )
             .all()
         )
@@ -345,7 +347,9 @@ def get_all_worker_details_service(
             for category in worker.categories
         }
         sub_category_ids = {
-            sub.sub_category_skill_id for worker in workers for sub in worker.sub_categories
+            sub.sub_category_skill_id
+            for worker in workers
+            for sub in worker.sub_categories
         }
 
         category_rows = (
@@ -395,7 +399,9 @@ def get_all_worker_details_service(
                 categories.append(
                     {
                         "categoryId": str(category.category_skill_id),
-                        "categoryName": category_name_map.get(category.category_skill_id),
+                        "categoryName": category_name_map.get(
+                            category.category_skill_id
+                        ),
                         "experienceYears": category.experience_years,
                         "subCategoryIds": matched_sub_ids,
                         "subCategoryNames": matched_sub_names,
@@ -540,7 +546,7 @@ def get_worker_documents_by_type_service(
 
 # -----------------------Update Worker Logo Service----------------------- #
 def update_worker_logo_service(
-    logo_url: str | None,
+    logo_url: str,
     firebase_uid: str,
     db: Session,
 ) -> WorkerRegistrationModel:
@@ -697,6 +703,185 @@ def update_worker_address_service(
 
 
 # -----------------------End Update Worker Address Service ----------------------- #
+
+
+# -----------------------Update Worker Skills Service ----------------------- #
+def update_worker_skills_service(
+    firebase_uid: str,
+    skills: WorkerSkillsUpdateSchema,
+    db: Session,
+) -> WorkerRegistrationModel:
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        category_ids = [category.categoryId for category in skills.categories]
+        if len(category_ids) != len(set(category_ids)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Duplicate category ids are not allowed",
+            )
+
+        if category_ids:
+            valid_categories = (
+                db.query(CategorySkillModel.id)
+                .filter(CategorySkillModel.id.in_(category_ids))
+                .all()
+            )
+            valid_category_ids = {str(row[0]) for row in valid_categories}
+            for category_id in category_ids:
+                if category_id not in valid_category_ids:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Invalid category id provided",
+                    )
+
+        db.query(WorkerSubCategoryModel).filter(
+            WorkerSubCategoryModel.worker_id == worker.id
+        ).delete()
+        db.query(WorkerSkillCategoryModel).filter(
+            WorkerSkillCategoryModel.worker_id == worker.id
+        ).delete()
+
+        for category in skills.categories:
+            db.add(
+                WorkerSkillCategoryModel(
+                    worker_id=worker.id,
+                    category_skill_id=category.categoryId,
+                    experience_years=category.experienceYears,
+                )
+            )
+
+            if not category.subCategoryIds:
+                continue
+
+            if len(category.subCategoryIds) != len(set(category.subCategoryIds)):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Duplicate subcategory ids are not allowed",
+                )
+
+            valid_sub_categories = (
+                db.query(SubCategorySkillModel.id)
+                .filter(
+                    SubCategorySkillModel.id.in_(category.subCategoryIds),
+                    SubCategorySkillModel.category_skill_id == category.categoryId,
+                )
+                .all()
+            )
+            valid_sub_ids = {str(row[0]) for row in valid_sub_categories}
+
+            for sub_category_id in category.subCategoryIds:
+                if sub_category_id not in valid_sub_ids:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Invalid subcategory for selected category",
+                    )
+
+                db.add(
+                    WorkerSubCategoryModel(
+                        worker_id=worker.id,
+                        sub_category_skill_id=sub_category_id,
+                    )
+                )
+
+        db.flush()
+        return worker
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR =>", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating worker skills",
+        )
+
+
+# -----------------------End Update Worker Skills Service ----------------------- #
+
+
+# -----------------------Delete Worker Skill Category Service----------------------- #
+def delete_worker_skill_category_service(
+    firebase_uid: str,
+    category_id: str,
+    db: Session,
+) -> dict:
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        worker_category = (
+            db.query(WorkerSkillCategoryModel)
+            .filter(
+                WorkerSkillCategoryModel.worker_id == worker.id,
+                WorkerSkillCategoryModel.category_skill_id == category_id,
+            )
+            .first()
+        )
+
+        if not worker_category:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker category not found",
+            )
+
+        sub_category_ids = (
+            db.query(SubCategorySkillModel.id)
+            .filter(SubCategorySkillModel.category_skill_id == category_id)
+            .all()
+        )
+        sub_category_ids = [row[0] for row in sub_category_ids]
+
+        deleted_sub_categories = 0
+        if sub_category_ids:
+            deleted_sub_categories = (
+                db.query(WorkerSubCategoryModel)
+                .filter(
+                    WorkerSubCategoryModel.worker_id == worker.id,
+                    WorkerSubCategoryModel.sub_category_skill_id.in_(sub_category_ids),
+                )
+                .delete(synchronize_session=False)
+            )
+
+        db.delete(worker_category)
+        db.flush()
+
+        return {
+            "worker_id": str(worker.id),
+            "category_id": str(category_id),
+            "deleted_sub_categories": deleted_sub_categories,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR =>", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error deleting worker category",
+        )
+
+
+# -----------------------End Delete Worker Skill Category Service----------------------- #
 
 
 # -----------------------Create Worker Bank Details Service----------------------- #
