@@ -18,7 +18,6 @@ class CompanyModel(Base):
     firebase_uid = Column(String, unique=True, nullable=False, index=True)
 
     company_name = Column(String, nullable=False)
-    industry_name = Column(String, nullable=False)
     industry_id = Column(
         UUID(as_uuid=True),
         ForeignKey("industry_types.id", ondelete="RESTRICT"),

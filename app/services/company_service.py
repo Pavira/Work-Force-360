@@ -9,6 +9,7 @@ from app.models.company_models import (
     CompanyAddressModel,
     CompanyDocumentModel,
 )
+from app.models.industry_skill_models import IndustryTypeModel
 from app.schemas.company_schema import (
     CompanyAddressCreateSchema,
     CompanyBankDetailsSchema,
@@ -62,12 +63,21 @@ def get_company_profile_service(
                 detail="Company profile not found",
             )
 
+        industry_name = None
+        if company.industry_id:
+            industry = (
+                db.query(IndustryTypeModel.name)
+                .filter(IndustryTypeModel.id == company.industry_id)
+                .first()
+            )
+            industry_name = industry[0] if industry else None
+
         return {
             "id": company.id,
             "firebase_uid": company.firebase_uid,
             "company_name": company.company_name,
             "industry_id": company.industry_id,
-            "industry_name": company.industry_name,
+            "industry_name": industry_name,
             "gst_number": company.gst_number,
             "auth_phone": company.auth_phone,
             "contact_person_name": company.contact_person_name,
@@ -135,7 +145,6 @@ def create_company_profile_service(
         company_db = CompanyModel(
             firebase_uid=firebase_uid,
             company_name=company.companyName,
-            industry_name=company.industryName,
             industry_id=company.industryId,
             gst_number=company.gstNo,
             auth_phone=company.authPhone,
@@ -871,7 +880,6 @@ def update_company_profile_details_service(
             )
 
         company.company_name = company_details.companyName
-        company.industry_name = company_details.industryName
         company.industry_id = company_details.industryId
         if company_details.gstNo is not None:
             company.gst_number = company_details.gstNo

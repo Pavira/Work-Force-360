@@ -32,7 +32,6 @@ class DocumentInfoSchema(BaseModel):
 
 class CompanyInfoSchema(BaseModel):
     companyName: str
-    industryName: str
     industryId: UUID
     gstNo: Optional[str] = None
     addresses: List[CompanyAddressCreateSchema]
@@ -57,7 +56,6 @@ class UploadUrlRequest(BaseModel):
 
 class CompanyProfileDetailsSchema(BaseModel):
     companyName: str
-    industryName: str
     industryId: UUID
     gstNo: Optional[str] = None
 

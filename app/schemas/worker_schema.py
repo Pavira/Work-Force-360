@@ -72,7 +72,7 @@ class WorkerAddressUpdateSchema(BaseModel):
 
 
 class WorkerLogoUpdateSchema(BaseModel):
-    logo_url: str
+    logoUrl: Optional[str] = None
 
 
 class WorkerBankDetailsSchema(BaseModel):

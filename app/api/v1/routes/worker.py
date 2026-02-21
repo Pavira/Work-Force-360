@@ -221,8 +221,15 @@ def update_worker_logo(
     """
     Update worker profile logo (Firebase authenticated).
     """
+    final_logo_url = logo_url.logoUrl
+    if not final_logo_url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="logo_url (or logoUrl) is required",
+        )
+
     worker = update_worker_logo_service(
-        logo_url=logo_url.logo_url,
+        logo_url=final_logo_url,
         firebase_uid=current_user["uid"],
         db=db,
     )
