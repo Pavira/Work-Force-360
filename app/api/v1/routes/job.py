@@ -18,7 +18,7 @@ from app.services.job_service import (
 )
 from app.services.matching_service import run_matching
 from app.utils.response import custom_response
-
+from app.utils.logger import logger
 
 router = APIRouter()
 
@@ -26,55 +26,34 @@ router = APIRouter()
 # ------------------------ Job Post Route ------------------------
 
 
-async def start_matching(job_id: UUID):
-    try:
-        print("🚀 Matching task started for:", job_id)
-
-        await asyncio.sleep(0.1)
-
-        print("⏳ Calling run_matching")
-
-        await run_matching(job_id)
-
-        print("✅ Matching finished")
-
-    except Exception as e:
-        print("❌ Matching crashed:", e)
-        import traceback
-
-        traceback.print_exc()
-
-
 @router.post("/create_job_post", status_code=status.HTTP_201_CREATED)
-@limiter.limit("30/minute")
 async def create_job_post(
-    request: Request,
     payload: JobPostingSchema,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
 ):
     """
-    Create a new job post.
+    Create job and trigger background matching.
     """
-    try:
-        job = await create_job_post_service(payload=payload, db=db)
 
-        # 🔥 Start matching in background (non-blocking)
-        task = asyncio.create_task(start_matching(job["id"]))
-        print("Task object:", task)
+    try:
+        job = await create_job_post_service(payload, db)
+
+        # Fire-and-forget matching
+        asyncio.create_task(run_matching(job["id"]))
 
         return custom_response(
             success=True,
-            message="Job post created successfully",
+            message="Job created successfully. Matching started.",
             data=job,
             code=status.HTTP_201_CREATED,
         )
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        traceback.print_exc()
-        raise
+    except Exception as exc:
+        logger.exception("Error creating job")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create job",
+        )
 
 
 # ------------------------END Job Post Route ------------------------

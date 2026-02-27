@@ -13,21 +13,19 @@ select * from worker_documents
 	
 
 -------Temparary Query------------------------
-UPDATE category_skills
-SET tier = 'Tier 1'
-where industry_type_id = 'f029fa9f-0c44-40e0-a426-774c80e44db2'
+DELETE FROM SELECT * FROM industry_types
+WHERE id IN <> ('13c43402-faa9-4f42-b295-3e26a3f8f12b','d3b139ad-918c-4fb8-993f-9eaab432dde3');
 
-UPDATE job_postings
-SET experience_required = 2
-where industry_type_id = 'f029fa9f-0c44-40e0-a426-774c80e44db2'
+Alter table companies
+Drop COLUMN industry_name
 
-SELECT indexname 
-FROM pg_indexes 
-WHERE indexname = 'idx_job_postings_location';
+DELETE FROM industry_types
+WHERE id NOT IN (
+    '13c43402-faa9-4f42-b295-3e26a3f8f12b',
+    'd3b139ad-918c-4fb8-993f-9eaab432dde3'
+);
 
-DROP INDEX IF EXISTS idx_job_postings_location;
-
-
+cd973909-d6e2-4fa7-be1a-3f8f875220f0
 -------------------------------------------
 
 -- If you want to delete whole table use this command

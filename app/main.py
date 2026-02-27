@@ -7,7 +7,15 @@ from fastapi.openapi.utils import get_openapi
 
 import uvicorn
 from app.core.config import settings
-from app.api.v1.routes import auth, company, industry_skill, job, worker
+from app.api.v1.routes import (
+    auth,
+    company,
+    company_ws,
+    industry_skill,
+    job,
+    worker,
+    worker_ws,
+)
 
 # from app.utils.middlewares import LoggingMiddleware, AuthMiddleware
 
@@ -39,6 +47,12 @@ app.include_router(job.router, prefix="/api/v1/job", tags=["Job"])
 app.include_router(company.router, prefix="/api/v1/company", tags=["Company"])
 app.include_router(
     industry_skill.router, prefix="/api/v1/industry_skill", tags=["Industry & Skill"]
+)
+app.include_router(
+    worker_ws.router, prefix="/api/v1/worker_ws", tags=["Worker WebSocket"]
+)
+app.include_router(
+    company_ws.router, prefix="/api/v1/company_ws", tags=["Company WebSocket"]
 )
 
 # Rate Limiting
