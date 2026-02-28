@@ -6,7 +6,9 @@ from fastapi import (
 )  # Imports FastAPI WebSocket classes for connection handling.
 from typing import Dict, List  # Imports typing helpers used for nested connection maps.
 import asyncio  # Imports asyncio utilities for background heartbeat tasks.
-from utils.logger import logger  # Imports shared application logger for observability.
+from app.utils.logger import (
+    logger,
+)  # Imports custom logger for connection event logging.
 
 
 class ConnectionManager:  # Defines a manager responsible for tracking and messaging socket clients.
