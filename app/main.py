@@ -4,6 +4,7 @@ from app.core import limiter
 from app.utils.response import custom_response
 from fastapi import FastAPI, status
 from fastapi.openapi.utils import get_openapi
+from fastapi.middleware.cors import CORSMiddleware
 
 import uvicorn
 from app.core.config import settings
@@ -37,6 +38,24 @@ app = FastAPI(
     # ],
 )
 
+# ---------- Middleware ----------
+allowed_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://work-force-360.vercel.app",
+    "https://www.work-force-360.vercel.app",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # ---------- Middleware ----------
 # app.add_middleware(LoggingMiddleware)
 # app.add_middleware(AuthMiddleware)
