@@ -153,7 +153,7 @@ async def run_matching(job_id: UUID) -> None:
                             "workers",
                             matched_worker.id,
                             {
-                                "type": "ASSIGN_WORKER",
+                                "type": "JOB_ASSIGNED",
                                 "job_id": job.id,
                                 "work_address": job.work_address,
                                 "scheduled_duration": job.scheduled_duration,

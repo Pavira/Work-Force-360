@@ -8,6 +8,7 @@ from fastapi.openapi.utils import get_openapi
 import uvicorn
 from app.core.config import settings
 from app.api.v1.routes import (
+    admin_panel_company,
     auth,
     company,
     company_ws,
@@ -53,6 +54,12 @@ app.include_router(
 )
 app.include_router(
     company_ws.router, prefix="/api/v1/company_ws", tags=["Company WebSocket"]
+)
+
+app.include_router(
+    admin_panel_company.router,
+    prefix="/api/v1/admin_panel_company",
+    tags=["Admin Panel - Company"],
 )
 
 # Rate Limiting

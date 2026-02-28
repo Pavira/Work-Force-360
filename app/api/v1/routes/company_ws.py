@@ -44,7 +44,9 @@ async def company_websocket(
             # -------------------------
             elif message_type == "CANCEL_JOB":
                 job_id = data.get("job_id")
-                logger.info("Company %s requested CANCEL_JOB job_id=%s", company_id, job_id)
+                logger.info(
+                    "Company %s requested CANCEL_JOB job_id=%s", company_id, job_id
+                )
                 # future logic
 
             else:

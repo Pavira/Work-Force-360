@@ -337,7 +337,7 @@ def get_all_worker_details_service(
             .options(
                 selectinload(WorkerRegistrationModel.categories),
                 selectinload(WorkerRegistrationModel.sub_categories),
-                selectinload(WorkerBankDetailsModel.bank_details),
+                selectinload(WorkerRegistrationModel.bank_details),
             )
             .all()
         )
@@ -428,8 +428,6 @@ def get_all_worker_details_service(
                     "city": worker.city,
                     "state": worker.state,
                     "pincode": worker.pincode,
-                    # "latitude": (point.y if point else None),
-                    # "longitude": (point.x if point else None),
                     "years": years_for_worker,
                     "categories": categories,
                     "logoUrl": worker.logo_url,
