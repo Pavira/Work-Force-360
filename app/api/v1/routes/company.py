@@ -43,6 +43,7 @@ from app.services.company_service import (
     update_company_bank_details_service,
     update_company_logo_service,
     update_company_profile_details_service,
+    update_company_status_to_approved_service,
     # update_company_profile_service,
     update_contact_info_service,
     update_document_info_service,
@@ -871,6 +872,38 @@ def get_company_name_and_status(
             "company_name": company["companyName"],
             "logo_url": company["logoUrl"],
             "status": company["status"],
+        },
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Get Company Name and Status----------------------- #
+
+
+# -----------------------Update Company Status to Approved----------------------- #
+@router.patch(
+    "/approve_company_profile/{company_id}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def approve_company_profile(
+    request: Request,  # REQUIRED by SlowAPI
+    company_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """
+    Update company status to approved (Firebase authenticated) .
+    """
+    company_db = update_company_status_to_approved_service(
+        company_id=company_id,
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Company profile approved successfully",
+        data={
+            "id": company_db.id,
         },
         code=status.HTTP_200_OK,
     )

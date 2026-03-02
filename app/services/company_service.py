@@ -1,5 +1,5 @@
 import os
-from uuid import uuid4
+from uuid import UUID, uuid4
 from sqlalchemy.orm import Session, selectinload
 from fastapi import HTTPException, status
 
@@ -1252,3 +1252,34 @@ def company_name_and_status_service(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error fetching company name and status",
         )
+
+
+# -----------------------End Get company name and status Service----------------------- #
+
+
+# -----------------------Update Company Status to Approved Service----------------------- #
+def update_company_status_to_approved_service(company_id: UUID, db: Session):
+    try:
+        company = db.query(CompanyModel).filter(CompanyModel.id == company_id).first()
+
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
+        company.status = "approved"
+        db.flush()
+        return company
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating company status to approved",
+        )
+
+
+# -----------------------End Update Company Status to Approved Service----------------------- #
