@@ -907,3 +907,6 @@ def approve_company_profile(
         },
         code=status.HTTP_200_OK,
     )
+
+
+# -----------------------End Update Company Status to Approved----------------------- #

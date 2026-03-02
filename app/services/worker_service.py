@@ -604,6 +604,7 @@ def add_document_against_worker_id_and_type_service(
             worker_id=worker.id,
         )
         db.add(document)
+        worker.status = "unapproved"
         db.flush()
         return document
 
@@ -1066,6 +1067,8 @@ def update_worker_bank_details_service(
         worker_bank.ifsc_code = bank_details.ifscCode
         worker_bank.upi_id = bank_details.upiId
 
+        # If bank details are updated, we can consider worker profile as unapproved and require admin approval again
+        worker.status = "unapproved"
         db.flush()
         return worker
 

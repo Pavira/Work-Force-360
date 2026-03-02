@@ -17,6 +17,9 @@ from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
+# Document Types: PAN Card - (PAN), AADHAR - (AC), Certificate - (CR).
+# Status: draft, unapproved, approved, rejected, blocked
+
 
 class WorkerRegistrationModel(Base):
     __tablename__ = "workers"

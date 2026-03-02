@@ -18,5 +18,5 @@ dependencies = [
     "shapely>=2.1.2",
     "slowapi>=0.1.9",
     "sqlalchemy[asyncio]>=2.0.44",
-    "uvicorn>=0.37.0",
+    "uvicorn[standard]>=0.37.0",
 ]
