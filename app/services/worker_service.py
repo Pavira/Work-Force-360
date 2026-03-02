@@ -1,7 +1,7 @@
 import os
 import traceback
 from typing import Optional
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException, status
 from geoalchemy2.shape import from_shape, to_shape
@@ -1133,3 +1133,35 @@ def generate_upload_url_service(
 
 
 # -----------------------End Generate S3 Upload URL Service----------------------- #
+
+
+# -----------------------Update Worker Status to Approved Service----------------------- #
+def update_worker_status_to_approved_service(worker_id: UUID, db: Session):
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.id == worker_id)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        worker.status = "approved"
+        db.flush()
+        return worker
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR =>", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating worker status to approved",
+        )
+
+
+# -----------------------End Update Worker Status to Approved Service----------------------- #

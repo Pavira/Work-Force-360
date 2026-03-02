@@ -1,4 +1,5 @@
 import traceback
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi import HTTPException
@@ -30,6 +31,7 @@ from app.services.worker_service import (
     get_worker_profile_service,
     get_worker_terms_and_conditions,
     update_worker_bank_details_service,
+    update_worker_status_to_approved_service,
     update_worker_logo_service,
     update_worker_address_service,
     update_worker_skills_service,
@@ -409,7 +411,9 @@ def update_worker_skills(
 
 
 # -----------------------Add Worker Skill Category----------------------- #
-@router.post("/add_skill_category_against_worker_id", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/add_skill_category_against_worker_id", status_code=status.HTTP_201_CREATED
+)
 @limiter.limit("30/minute")
 def add_skill_category_against_worker_id(
     request: Request,  # REQUIRED by SlowAPI
@@ -438,7 +442,9 @@ def add_skill_category_against_worker_id(
 
 
 # -----------------------Delete Worker Skill Category----------------------- #
-@router.delete("/delete_worker_skill_category/{category_id}", status_code=status.HTTP_200_OK)
+@router.delete(
+    "/delete_worker_skill_category/{category_id}", status_code=status.HTTP_200_OK
+)
 @limiter.limit("30/minute")
 def delete_worker_skill_category(
     request: Request,  # REQUIRED by SlowAPI
@@ -577,3 +583,35 @@ def generate_upload_url(
 
 
 # -----------------------End Generate S3 Upload URL----------------------- #
+
+
+# -----------------------Update Worker Status to Approved----------------------- #
+@router.patch(
+    "/approve_worker_profile/{worker_id}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def approve_worker_profile(
+    request: Request,  # REQUIRED by SlowAPI
+    worker_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """
+    Update worker status to approved.
+    """
+    worker_db = update_worker_status_to_approved_service(
+        worker_id=worker_id,
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker profile approved successfully",
+        data={
+            "id": worker_db.id,
+        },
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Update Worker Status to Approved----------------------- #
