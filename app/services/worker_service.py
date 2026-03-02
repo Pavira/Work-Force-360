@@ -432,6 +432,7 @@ def get_all_worker_details_service(
                     "categories": categories,
                     "logoUrl": worker.logo_url,
                     "status": worker.status,
+                    "statusApprovalMessageShown": worker.status_approval_message_shown,
                     "is_active": worker.is_active,
                     "created_at": worker.created_at,
                     "updated_at": worker.updated_at,
@@ -605,6 +606,7 @@ def add_document_against_worker_id_and_type_service(
         )
         db.add(document)
         worker.status = "unapproved"
+        worker.status_approval_message_shown = False
         db.flush()
         return document
 
@@ -639,10 +641,15 @@ def worker_name_and_status_service(
                 detail="Worker profile not found",
             )
 
+        if worker.status == "approved":
+            worker.status_approval_message_shown = True
+        db.flush()
+
         return {
             "name": worker.name,
             "logoUrl": worker.logo_url,
             "status": worker.status,
+            "statusApprovalMessageShown": worker.status_approval_message_shown,
         }
 
     except HTTPException:
@@ -1069,6 +1076,7 @@ def update_worker_bank_details_service(
 
         # If bank details are updated, we can consider worker profile as unapproved and require admin approval again
         worker.status = "unapproved"
+        worker.status_approval_message_shown = False
         db.flush()
         return worker
 
