@@ -283,8 +283,10 @@ def update_document_info_service(
                     document_url=doc.documentUrl,
                 )
             )
+            # If document type is IDP is uploaded, set status to unapproved for verification
+            if (doc.documentType or "").strip().upper() in {"IDP"}:
+                company_profile.status = "unapproved"
 
-        # db.add(company_profile)
         db.flush()
         return company_profile
 
@@ -883,6 +885,7 @@ def update_company_profile_details_service(
         company.industry_id = company_details.industryId
         if company_details.gstNo is not None:
             company.gst_number = company_details.gstNo
+            company.status = "unapproved"  # Set to unapproved for verification if GST number is updated
 
         db.flush()
         return company
@@ -1151,6 +1154,15 @@ def update_document_info_service_by_id(
         if document_info.documentUrl is not None:
             document.document_url = document_info.documentUrl
 
+        # If document type is IDP is updated, set status to unapproved for verification
+        company = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.id == document.company_id)
+            .first()
+        )
+        if company:
+            company.status = "unapproved"
+
         db.flush()
         return document
 
@@ -1190,6 +1202,8 @@ def add_document_against_company_id_and_type_service(
             company_id=company.id,
         )
         db.add(document)
+        # If Any document type is IDP is added, set status to unapproved for verification
+        company.status = "unapproved"
         db.flush()
         return document
 
