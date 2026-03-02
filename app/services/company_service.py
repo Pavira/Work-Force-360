@@ -286,6 +286,7 @@ def update_document_info_service(
             # If document type is IDP is uploaded, set status to unapproved for verification
             if (doc.documentType or "").strip().upper() in {"IDP"}:
                 company_profile.status = "unapproved"
+                company_profile.status_approval_message_shown = False
 
         db.flush()
         return company_profile
@@ -886,7 +887,7 @@ def update_company_profile_details_service(
         if company_details.gstNo is not None:
             company.gst_number = company_details.gstNo
             company.status = "unapproved"  # Set to unapproved for verification if GST number is updated
-
+            company.status_approval_message_shown = False
         db.flush()
         return company
 
@@ -1162,6 +1163,7 @@ def update_document_info_service_by_id(
         )
         if company:
             company.status = "unapproved"
+            company.status_approval_message_shown = False
 
         db.flush()
         return document
@@ -1204,6 +1206,8 @@ def add_document_against_company_id_and_type_service(
         db.add(document)
         # If Any document type is IDP is added, set status to unapproved for verification
         company.status = "unapproved"
+        company.status_approval_message_shown = False
+
         db.flush()
         return document
 
@@ -1237,11 +1241,15 @@ def company_name_and_status_service(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Company profile not found",
             )
+        if company.status == "approved":
+            company.status_approval_message_shown = True
 
+        db.flush()
         return {
             "companyName": company.company_name,
             "logoUrl": company.logo_url,
             "status": company.status,
+            "statusApprovalMessageShown": company.status_approval_message_shown,
         }
 
     except HTTPException:

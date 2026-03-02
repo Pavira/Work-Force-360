@@ -872,6 +872,7 @@ def get_company_name_and_status(
             "company_name": company["companyName"],
             "logo_url": company["logoUrl"],
             "status": company["status"],
+            "status_approval_message_shown": company["statusApprovalMessageShown"],
         },
         code=status.HTTP_200_OK,
     )

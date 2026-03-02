@@ -69,6 +69,7 @@ class WorkerRegistrationModel(Base):
 
     # ---- Status ----
     status = Column(String(50), default="draft", nullable=False)
+    status_approval_message_shown = Column(Boolean, default=False)
     is_active = Column(Boolean, server_default=text("true"))
     is_online = Column(Boolean, server_default=text("false"))
     is_available = Column(Boolean, server_default=text("false"))

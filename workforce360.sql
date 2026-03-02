@@ -10,29 +10,11 @@ select * from workers
 select * from worker_skill_categories
 select * from worker_skill_subcategories
 select * from worker_documents
-	
+
 
 -------Temparary Query------------------------
-DELETE FROM SELECT * FROM industry_types
-WHERE id IN <> ('13c43402-faa9-4f42-b295-3e26a3f8f12b','d3b139ad-918c-4fb8-993f-9eaab432dde3');
-
-DELETE FROM companies
-where auth_phone = 'string'
-
-DELETE FROM company_addresses
-where company_id = 'bab4c487-42d5-4c08-8453-b8fd84e719f0'
-
-bab4c487-42d5-4c08-8453-b8fd84e719f0
-Alter table companies
-Drop COLUMN industry_name
-
-DELETE FROM industry_types
-WHERE id NOT IN (
-    '13c43402-faa9-4f42-b295-3e26a3f8f12b',
-    'd3b139ad-918c-4fb8-993f-9eaab432dde3'
-);
-
-cd973909-d6e2-4fa7-be1a-3f8f875220f0
+update workers
+set status_approval_message_shown = false
 -------------------------------------------
 
 -- If you want to delete whole table use this command

@@ -38,6 +38,7 @@ class CompanyModel(Base):
     logo_url = Column(Text, nullable=True)
 
     status = Column(String, default="draft")
+    status_approval_message_shown = Column(Boolean, default=False)
     is_verified = Column(Boolean, default=False)
 
     is_active = Column(Boolean, server_default=text("true"))
