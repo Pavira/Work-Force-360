@@ -65,5 +65,5 @@ async def company_websocket(
 
     finally:
         logger.debug("Company websocket cleanup started for company_id=%s", company_id)
-        await manager.disconnect("companies", str(company_id), websocket)
+        await manager.disconnect("companies", company_id, websocket)
         logger.info("Company websocket cleanup completed for company_id=%s", company_id)

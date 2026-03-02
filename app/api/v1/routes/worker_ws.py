@@ -80,7 +80,7 @@ async def worker_websocket(
     db: Session = Depends(get_db),
 ):
     logger.info("Worker websocket connect requested for worker_id=%s", worker_id)
-    await manager.connect("workers", str(worker_id), websocket)
+    await manager.connect("workers", worker_id, websocket)
     logger.info("Worker websocket connected for worker_id=%s", worker_id)
 
     # Mark worker online
@@ -155,6 +155,6 @@ async def worker_websocket(
 
     finally:
         logger.debug("Worker websocket cleanup started for worker_id=%s", worker_id)
-        await manager.disconnect("workers", str(worker_id), websocket)
+        await manager.disconnect("workers", worker_id, websocket)
         await run_in_threadpool(set_worker_offline, db, worker_id)
         logger.info("Worker websocket cleanup completed for worker_id=%s", worker_id)
