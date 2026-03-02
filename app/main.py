@@ -46,6 +46,7 @@ allowed_origins = [
     "http://127.0.0.1:5173",
     "https://work-force-360.vercel.app",
     "https://www.work-force-360.vercel.app",
+    "https://work-force-360.onrender.com",
 ]
 
 app.add_middleware(
@@ -116,5 +117,5 @@ async def root():
     )
 
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# if __name__ == "__main__":
+#     uvicorn.run(app, host="0.0.0.0", port=8000)
