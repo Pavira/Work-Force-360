@@ -81,6 +81,7 @@ async def worker_websocket(
 ):
     logger.info("Worker websocket connect requested for worker_id=%s", worker_id)
     await manager.connect("workers", worker_id, websocket)
+    await websocket.send_json({"type": "CONNECTED", "worker_id": str(worker_id)})
     logger.info("Worker websocket connected for worker_id=%s", worker_id)
 
     # Mark worker online
@@ -136,8 +137,8 @@ async def worker_websocket(
             # -------------------------
             # HEARTBEAT RESPONSE
             # -------------------------
-            elif message_type == "PONG":
-                logger.debug("Worker %s heartbeat PONG received", worker_id)
+            # elif message_type == "PONG":
+            #     logger.debug("Worker %s heartbeat PONG received", worker_id)
 
             else:
                 logger.warning(

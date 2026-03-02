@@ -22,7 +22,8 @@ async def company_websocket(
     db: Session = Depends(get_db),
 ):
     logger.info("Company websocket connect requested for company_id=%s", company_id)
-    await manager.connect("companies", str(company_id), websocket)
+    await manager.connect("companies", company_id, websocket)
+    await websocket.send_json({"type": "CONNECTED", "company_id": str(company_id)})
     logger.info("Company websocket connected for company_id=%s", company_id)
 
     try:
@@ -42,12 +43,12 @@ async def company_websocket(
             # -------------------------
             # OPTIONAL: CANCEL JOB
             # -------------------------
-            elif message_type == "CANCEL_JOB":
-                job_id = data.get("job_id")
-                logger.info(
-                    "Company %s requested CANCEL_JOB job_id=%s", company_id, job_id
-                )
-                # future logic
+            # elif message_type == "CANCEL_JOB":
+            #     job_id = data.get("job_id")
+            #     logger.info(
+            #         "Company %s requested CANCEL_JOB job_id=%s", company_id, job_id
+            #     )
+            # future logic
 
             else:
                 logger.warning(
