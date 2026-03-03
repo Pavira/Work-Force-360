@@ -1241,15 +1241,17 @@ def company_name_and_status_service(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Company profile not found",
             )
-        if company.status == "approved":
+        show_approval_message = False
+        if company.status == "approved" and not company.status_approval_message_shown:
+            show_approval_message = True
             company.status_approval_message_shown = True
-
-        db.flush()
+            db.flush()
         return {
             "companyName": company.company_name,
             "logoUrl": company.logo_url,
             "status": company.status,
             "statusApprovalMessageShown": company.status_approval_message_shown,
+            "showApprovalMessage": show_approval_message,
         }
 
     except HTTPException:
@@ -1276,7 +1278,10 @@ def update_company_status_to_approved_service(company_id: UUID, db: Session):
                 detail="Company profile not found",
             )
 
+        was_approved = company.status == "approved"
         company.status = "approved"
+        if not was_approved:
+            company.status_approval_message_shown = False
         db.flush()
         return company
 
