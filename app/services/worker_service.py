@@ -641,15 +641,18 @@ def worker_name_and_status_service(
                 detail="Worker profile not found",
             )
 
-        if worker.status == "approved":
+        show_approval_message = False
+        if worker.status == "approved" and not worker.status_approval_message_shown:
+            show_approval_message = True
             worker.status_approval_message_shown = True
-        db.flush()
+            db.flush()
 
         return {
             "name": worker.name,
             "logoUrl": worker.logo_url,
             "status": worker.status,
             "statusApprovalMessageShown": worker.status_approval_message_shown,
+            "showApprovalMessage": show_approval_message,
         }
 
     except HTTPException:
@@ -1158,7 +1161,10 @@ def update_worker_status_to_approved_service(worker_id: UUID, db: Session):
                 detail="Worker profile not found",
             )
 
+        was_approved = worker.status == "approved"
         worker.status = "approved"
+        if not was_approved:
+            worker.status_approval_message_shown = False
         db.flush()
         return worker
 

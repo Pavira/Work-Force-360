@@ -310,6 +310,7 @@ def get_worker_name_and_status(
             "logo_url": worker["logoUrl"],
             "status": worker["status"],
             "statusApprovalMessageShown": worker["statusApprovalMessageShown"],
+            "showApprovalMessage": worker["showApprovalMessage"],
         },
         code=status.HTTP_200_OK,
     )
