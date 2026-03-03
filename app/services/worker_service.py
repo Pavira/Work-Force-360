@@ -220,7 +220,7 @@ def get_worker_profile_service(
                 detail="Worker profile not found",
             )
 
-        # point = to_shape(worker.location) if worker.location else None
+        point = to_shape(worker.location) if worker.location else None
 
         category_ids = [c.category_skill_id for c in worker.categories]
         sub_category_ids = [s.sub_category_skill_id for s in worker.sub_categories]
@@ -284,8 +284,8 @@ def get_worker_profile_service(
             "city": worker.city,
             "state": worker.state,
             "pincode": worker.pincode,
-            # "latitude": point.y if point else None,
-            # "longitude": point.x if point else None,
+            "latitude": point.y if point else None,
+            "longitude": point.x if point else None,
             "documents": [
                 {
                     "documentType": d.document_type,

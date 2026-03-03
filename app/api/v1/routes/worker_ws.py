@@ -1,5 +1,6 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from fastapi.concurrency import run_in_threadpool
 from geoalchemy2.shape import from_shape
 from shapely.geometry import Point
@@ -19,34 +20,46 @@ router = APIRouter()
 # -----------------------------
 def set_worker_online(db: Session, worker_id: UUID):
     logger.debug("set_worker_online called for worker_id=%s", worker_id)
-    worker = (
-        db.query(WorkerRegistrationModel)
-        .filter(WorkerRegistrationModel.id == worker_id)
-        .first()
-    )
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.id == worker_id)
+            .first()
+        )
 
-    if worker:
-        worker.is_online = True
-        worker.is_available = True
-        logger.info("Worker %s marked online and available", worker_id)
-    else:
-        logger.warning("Worker %s not found while setting online", worker_id)
+        if worker:
+            worker.is_online = True
+            worker.is_available = True
+            db.commit()
+            logger.info("Worker %s marked online and available", worker_id)
+        else:
+            logger.warning("Worker %s not found while setting online", worker_id)
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("DB error while setting worker %s online", worker_id)
+        raise
 
 
 def set_worker_offline(db: Session, worker_id: UUID):
     logger.debug("set_worker_offline called for worker_id=%s", worker_id)
-    worker = (
-        db.query(WorkerRegistrationModel)
-        .filter(WorkerRegistrationModel.id == worker_id)
-        .first()
-    )
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.id == worker_id)
+            .first()
+        )
 
-    if worker:
-        worker.is_online = False
-        worker.is_available = False
-        logger.info("Worker %s marked offline and unavailable", worker_id)
-    else:
-        logger.warning("Worker %s not found while setting offline", worker_id)
+        if worker:
+            worker.is_online = False
+            worker.is_available = False
+            db.commit()
+            logger.info("Worker %s marked offline and unavailable", worker_id)
+        else:
+            logger.warning("Worker %s not found while setting offline", worker_id)
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("DB error while setting worker %s offline", worker_id)
+        raise
 
 
 def update_worker_location(db: Session, worker_id: UUID, lat: float, lng: float):
@@ -56,18 +69,24 @@ def update_worker_location(db: Session, worker_id: UUID, lat: float, lng: float)
         lat,
         lng,
     )
-    worker = (
-        db.query(WorkerRegistrationModel)
-        .filter(WorkerRegistrationModel.id == worker_id)
-        .first()
-    )
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.id == worker_id)
+            .first()
+        )
 
-    if worker:
-        point = from_shape(Point(lng, lat), srid=4326)
-        worker.location = point
-        logger.info("Worker %s location updated", worker_id)
-    else:
-        logger.warning("Worker %s not found while updating location", worker_id)
+        if worker:
+            point = from_shape(Point(lng, lat), srid=4326)
+            worker.location = point
+            db.commit()
+            logger.info("Worker %s location updated - location - %s", worker_id, point)
+        else:
+            logger.warning("Worker %s not found while updating location", worker_id)
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("DB error while updating location for worker %s", worker_id)
+        raise
 
 
 # -----------------------------
@@ -133,6 +152,18 @@ async def worker_websocket(
             elif message_type == "SET_UNAVAILABLE":
                 await run_in_threadpool(set_worker_offline, db, worker_id)
                 logger.debug("Worker %s SET_UNAVAILABLE processed", worker_id)
+
+            # -------------------------
+            # GO OFFLINE
+            # -------------------------
+            elif message_type == "GO_OFFLINE":
+                logger.info("Worker %s requested offline", worker_id)
+
+                # mark offline in DB
+                await run_in_threadpool(set_worker_offline, db, worker_id)
+
+                await websocket.close()
+                break
 
             # -------------------------
             # HEARTBEAT RESPONSE
