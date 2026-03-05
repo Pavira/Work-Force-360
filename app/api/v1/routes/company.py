@@ -874,6 +874,7 @@ def get_company_name_and_status(
             "status": company["status"],
             "status_approval_message_shown": company["statusApprovalMessageShown"],
             "showApprovalMessage": company["showApprovalMessage"],
+            "companyId": company["companyId"],
         },
         code=status.HTTP_200_OK,
     )

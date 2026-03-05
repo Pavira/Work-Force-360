@@ -1247,6 +1247,7 @@ def company_name_and_status_service(
             company.status_approval_message_shown = True
             db.flush()
         return {
+            "companyId": str(company.id),
             "companyName": company.company_name,
             "logoUrl": company.logo_url,
             "status": company.status,
