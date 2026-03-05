@@ -311,6 +311,7 @@ def get_worker_name_and_status(
             "status": worker["status"],
             "statusApprovalMessageShown": worker["statusApprovalMessageShown"],
             "showApprovalMessage": worker["showApprovalMessage"],
+            "workerId": worker["workerId"],
         },
         code=status.HTTP_200_OK,
     )
