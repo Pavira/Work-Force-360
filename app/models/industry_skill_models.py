@@ -86,6 +86,8 @@ class SubCategorySkillModel(Base):
     is_active = Column(Boolean, server_default=text("true"))
     # is_deleted = Column(Boolean, default=False)
 
+    wage = Column(String(50), nullable=True)  # e.g.,24 rs/hr, 240rs/day.
+
     created_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
