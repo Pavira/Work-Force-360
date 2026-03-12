@@ -1251,7 +1251,7 @@ def company_name_and_status_service(
             "companyName": company.company_name,
             "logoUrl": company.logo_url,
             "status": company.status,
-            "statusApprovalMessageShown": company.status_approval_message_shown,
+            # "statusApprovalMessageShown": company.status_approval_message_shown,
             "showApprovalMessage": show_approval_message,
         }
 
