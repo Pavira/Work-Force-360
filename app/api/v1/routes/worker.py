@@ -309,7 +309,7 @@ def get_worker_name_and_status(
             "name": worker["name"],
             "logo_url": worker["logoUrl"],
             "status": worker["status"],
-            "statusApprovalMessageShown": worker["statusApprovalMessageShown"],
+            # "statusApprovalMessageShown": worker["statusApprovalMessageShown"],
             "showApprovalMessage": worker["showApprovalMessage"],
             "workerId": worker["workerId"],
         },
