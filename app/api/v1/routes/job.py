@@ -38,9 +38,6 @@ async def create_job_post(
     try:
         job = await create_job_post_service(payload, db)
 
-        # Fire-and-forget matching
-        asyncio.create_task(run_matching(job["id"]))
-
         return custom_response(
             success=True,
             message="Job created successfully. Matching started.",
