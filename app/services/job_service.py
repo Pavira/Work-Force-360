@@ -49,9 +49,10 @@ async def create_job_post_service(payload: JobPostingSchema, db: Session) -> dic
             special_instructions=payload.specialInstructions,
         )
         db.add(job)
-        db.flush()
+        db.commit()
+        db.refresh(job)
 
-        # Start event-driven matching as soon as the job is created
+        # Start event-driven matching only after the job is persisted
         asyncio.create_task(run_matching(job.id))
 
         return {
