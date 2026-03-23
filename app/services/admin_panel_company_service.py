@@ -203,3 +203,37 @@ def get_all_draft_companies_service(
 
 
 # -----------------------End Get All Draft Company details Service----------------------- #
+
+
+# -----------------------Get Company Details by ID Service----------------------- #
+def get_company_details_by_id_service(db: Session, company_id: str):
+    try:
+        company = (
+            db.query(CompanyModel)
+            .options(
+                selectinload(CompanyModel.addresses),
+                selectinload(CompanyModel.bank_details),
+                selectinload(CompanyModel.documents),
+            )
+            .filter(CompanyModel.id == company_id, CompanyModel.is_active.is_(True))
+            .first()
+        )
+
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company not found",
+            )
+
+        return company
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching company details",
+        )
+
+
+# -----------------------End Get Company Details by ID Service----------------------- #
