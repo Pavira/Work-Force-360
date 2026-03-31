@@ -332,3 +332,32 @@ def update_company_status_to_approved_service(company_id: UUID, db: Session):
 
 
 # -----------------------End Update Company Status to Approved Service----------------------- #
+
+
+#  -----------------------Update Company Status to UnApproved Service----------------------- #
+def update_company_status_to_unapproved_service(company_id: UUID, db: Session):
+    try:
+        company = db.query(CompanyModel).filter(CompanyModel.id == company_id).first()
+
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
+        company.status = "unapproved"
+        company.status_approval_message_shown = False
+        db.flush()
+        return company
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating company status to unapproved",
+        )
+
+
+#  -----------------------End Update Company Status to UnApproved Service----------------------- #
