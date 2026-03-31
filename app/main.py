@@ -47,6 +47,7 @@ allowed_origins = [
     "https://work-force-360.vercel.app",
     "https://www.work-force-360.vercel.app",
     "https://work-force-360.onrender.com",
+    "https://workforce360-admin-panel.vercel.app",
 ]
 
 app.add_middleware(
