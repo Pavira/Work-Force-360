@@ -84,11 +84,11 @@ def get_firestore():
     if _db is not None:
         return _db
 
-    firebase_adminsdk_json = os.getenv("FIREBASE_ADMINSDK_JSON")
+    firebase_adminsdk_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
     if not firebase_adminsdk_json:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Missing FIREBASE_ADMINSDK_JSON environment variable for production.",
+            detail="Missing FIREBASE_SERVICE_ACCOUNT_JSON environment variable for production.",
         )
 
     try:
@@ -96,7 +96,7 @@ def get_firestore():
     except json.JSONDecodeError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="FIREBASE_ADMINSDK_JSON is not valid JSON.",
+            detail="FIREBASE_SERVICE_ACCOUNT_JSON is not valid JSON.",
         ) from e
 
     try:
