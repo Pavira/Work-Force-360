@@ -11,7 +11,11 @@ wheels/
 
 .history
 
-frontend
-
 .github
+
+terraform
+
+.vscode
+
+workforce360.sql
 

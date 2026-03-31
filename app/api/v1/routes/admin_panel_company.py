@@ -8,8 +8,11 @@ from app.services.admin_panel_company_service import (
     get_all_draft_companies_service,
     get_all_unapproved_companies_service,
     get_company_details_by_id_service,
+    update_company_status_to_approved_service,
+    update_company_status_to_unapproved_service,
 )
 from app.utils.response import custom_response
+from uuid import UUID
 
 
 router = APIRouter()
@@ -133,3 +136,67 @@ def get_company_details_by_id(
 
 
 # -----------------------End Get Company Details by ID----------------------- #
+
+
+# -----------------------Update Company Status to Approved----------------------- #
+@router.patch(
+    "/approve_company_profile/{company_id}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def approve_company_profile(
+    request: Request,  # REQUIRED by SlowAPI
+    company_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """
+    Update company status to approved (Firebase authenticated) .
+    """
+    company_db = update_company_status_to_approved_service(
+        company_id=company_id,
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Company profile approved successfully",
+        data={
+            "id": company_db.id,
+        },
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Update Company Status to Approved----------------------- #
+
+
+# -----------------------Update Company Status to Unapproved----------------------- #
+@router.patch(
+    "/unapprove/{company_id}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def unapprove_company(
+    request: Request,  # REQUIRED by SlowAPI
+    company_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """
+    Update company status to unapproved (Firebase authenticated) .
+    """
+    company_db = update_company_status_to_unapproved_service(
+        company_id=company_id,
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Company profile unapproved successfully",
+        data={
+            "id": company_db.id,
+        },
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Update Company Status to Unapproved----------------------- #

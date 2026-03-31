@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy.orm import Session, selectinload
 from fastapi import HTTPException, status
 from app.models.industry_skill_models import IndustryTypeModel
@@ -299,3 +301,34 @@ def get_company_details_by_id_service(db: Session, company_id: str):
 
 
 # -----------------------End Get Company Details by ID Service----------------------- #
+
+
+# -----------------------Update Company Status to Approved Service----------------------- #
+def update_company_status_to_approved_service(company_id: UUID, db: Session):
+    try:
+        company = db.query(CompanyModel).filter(CompanyModel.id == company_id).first()
+
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company profile not found",
+            )
+
+        was_approved = company.status == "approved"
+        company.status = "approved"
+        if not was_approved:
+            company.status_approval_message_shown = False
+        db.flush()
+        return company
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR 👉", e)  # or logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating company status to approved",
+        )
+
+
+# -----------------------End Update Company Status to Approved Service----------------------- #
