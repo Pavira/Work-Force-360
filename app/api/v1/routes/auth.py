@@ -20,9 +20,12 @@ def verify_pin(payload: PinVerifyRequest):
     doc = db.collection("Login").document("pin").get()
 
     if not doc.exists:
-        raise HTTPException(status_code=500, detail="PIN not configured")
+        raise HTTPException(status_code=404, detail="PIN not configured")
 
     saved_pin = doc.to_dict().get("login_pin")
+
+    if saved_pin is None:
+        raise HTTPException(status_code=404, detail="PIN not configured")
 
     if payload.pin != saved_pin:
         raise HTTPException(status_code=401, detail="Invalid PIN")

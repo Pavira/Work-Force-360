@@ -5,6 +5,8 @@ from firebase_admin import credentials, auth, firestore
 from app.utils.logger import logger
 from fastapi import HTTPException, status, Header
 
+_db = None
+
 
 def initialize_firebase():
     """
@@ -79,27 +81,38 @@ def get_current_user(authorization: str = Header(...)):
 def get_firestore():
     global _db
 
-    if _db:
+    if _db is not None:
         return _db
 
     firebase_adminsdk_json = os.getenv("FIREBASE_ADMINSDK_JSON")
     if not firebase_adminsdk_json:
-        raise ValueError(
-            "Missing FIREBASE_ADMINSDK_JSON environment variable for production."
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Missing FIREBASE_ADMINSDK_JSON environment variable for production.",
         )
 
     try:
         firebase_credentials = json.loads(firebase_adminsdk_json)
     except json.JSONDecodeError as e:
-        raise ValueError("FIREBASE_ADMINSDK_JSON is not valid JSON.") from e
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="FIREBASE_ADMINSDK_JSON is not valid JSON.",
+        ) from e
 
-    if not firebase_admin._apps:
-        cred = credentials.Certificate(firebase_credentials)
-        firebase_admin.initialize_app(cred)
-        logger.info("Firebase initialized (production env)")
+    try:
+        if not firebase_admin._apps:
+            cred = credentials.Certificate(firebase_credentials)
+            firebase_admin.initialize_app(cred)
+            logger.info("Firebase initialized (production env)")
 
-    _db = firestore.client()
-    return _db
+        _db = firestore.client()
+        return _db
+    except Exception as e:
+        logger.error(f"Firebase initialization failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to initialize Firebase Firestore",
+        )
 
 
 # ----------------------------------Firestore Production Initialization----------------------------------
