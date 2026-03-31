@@ -1,7 +1,8 @@
 import json
 import os
 import firebase_admin
-from firebase_admin import credentials, auth
+from firebase_admin import credentials, auth, firestore
+from app.utils.logger import logger
 from fastapi import HTTPException, status, Header
 
 
@@ -70,3 +71,35 @@ def get_current_user(authorization: str = Header(...)):
 
     token = authorization.split(" ")[1]
     return verify_firebase_token(token)
+
+
+# ----------------------------------Firestore Production Initialization----------------------------------
+# Production function for Vercel.
+# Set env var: FIREBASE_ADMINSDK_JSON with the full Firebase service account JSON.
+def get_firestore():
+    global _db
+
+    if _db:
+        return _db
+
+    firebase_adminsdk_json = os.getenv("FIREBASE_ADMINSDK_JSON")
+    if not firebase_adminsdk_json:
+        raise ValueError(
+            "Missing FIREBASE_ADMINSDK_JSON environment variable for production."
+        )
+
+    try:
+        firebase_credentials = json.loads(firebase_adminsdk_json)
+    except json.JSONDecodeError as e:
+        raise ValueError("FIREBASE_ADMINSDK_JSON is not valid JSON.") from e
+
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(firebase_credentials)
+        firebase_admin.initialize_app(cred)
+        logger.info("Firebase initialized (production env)")
+
+    _db = firestore.client()
+    return _db
+
+
+# ----------------------------------Firestore Production Initialization----------------------------------
