@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import traceback
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from shapely.geometry import Point
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.db.session import SessionLocal
 from app.models.job_model import JobPostingModel
 from app.models.worker_models import WorkerRegistrationModel
 from app.schemas.job_schema import JobPostingSchema
@@ -207,7 +209,7 @@ def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict:
 
         db.query(WorkerRegistrationModel).filter(
             WorkerRegistrationModel.id == worker_id
-        ).update({"is_available": False, "current_job_id": job_id})
+        ).update({"is_available": False})
 
         db.flush()
         return {"message": "Job Assigned"}

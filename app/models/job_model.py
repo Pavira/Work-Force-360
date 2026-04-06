@@ -14,7 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 
-# Job Status: Searching, Assigned, InProgress, Completed, Cancelled, NoWorkerMatch
+# Job Status: searching, assigned, in_progress, completed, cancelled, no_worker_match
 
 
 class JobPostingModel(Base):

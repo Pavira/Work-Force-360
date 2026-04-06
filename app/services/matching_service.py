@@ -14,6 +14,7 @@ from app.core.matching_config import (
     MAX_RADIUS_METERS,
     RADIUS_INCREMENT_METERS,
     RETRY_DELAY_SECONDS,
+    JOB_EXPIRY_SECONDS,
 )
 from app.core.websocket import manager
 from app.db.session import SessionLocal
@@ -91,7 +92,7 @@ async def run_matching(job_id: UUID) -> None:
     - Retry up to MAX_ATTEMPTS
     - Expand radius each attempt
     - Stop if job status changes
-    - If timeout reached, mark as no_match and notify company websocket
+    - If timeout reached, mark as no_worker_match and notify company websocket
     """
 
     logger.info("Matching started for Job: %s", job_id)
@@ -131,65 +132,31 @@ async def run_matching(job_id: UUID) -> None:
                     )
 
                     if workers:
-                        matched_worker = workers[0]
-
-                        job.status = "Assigned"
-                        job.assigned_worker_id = matched_worker.id
-                        job.assigned_at = func.now()
-                        matched_worker.is_available = False
-
-                        try:
-                            db.commit()
-                        except SQLAlchemyError as commit_error:
-                            db.rollback()
-                            logger.error(
-                                "Failed to assign worker for job %s: %s",
-                                job_id,
-                                commit_error,
-                            )
-                            continue
-
-                        await manager.send_to_user(
-                            "workers",
-                            matched_worker.id,
-                            {
-                                "type": "JOB_ASSIGNED",
-                                "job_id": job.id,
-                                "work_address": job.work_address,
-                                "scheduled_duration": job.scheduled_duration,
-                                "duration_type": job.duration_type,
-                                "wage": job.wage,
-                                "workers_required": job.workers,
-                                "phone_number": job.phone_number,
-                                "status": "Assigned",
-                            },
-                        )
-
-                        company_message = {
-                            "type": "WORKER_MATCHED",
-                            "job_id": job.id,
-                            "worker_id": matched_worker.id,
-                            "worker_name": matched_worker.name,
-                            "status": "Assigned",
+                        payload = {
+                            "type": "NEW_JOB",
+                            "job_id": str(job.id),
+                            # "description": job.description,
+                            "work_address": job.work_address,
+                            "wage": str(job.wage),
+                            "workers_required": job.workers,
+                            "expires_in": JOB_EXPIRY_SECONDS,
                         }
-                        company_id = getattr(job, "company_id", None)
-                        if company_id:
-                            await manager.send_to_user(
-                                "companies",
-                                company_id,
-                                company_message,
-                            )
-                        # else:
-                        #     # Fallback when job has no company_id relation.
-                        #     await manager.broadcast("companies", company_message)
+                        # ✅ send to workers
+                        for worker in workers:
+                            try:
+                                await manager.send_to_user(
+                                    "workers",
+                                    worker.id,
+                                    payload,
+                                )
+                            except Exception:
+                                logger.exception(
+                                    "Failed to send job %s to worker %s",
+                                    job.id,
+                                    worker.id,
+                                )
 
-                        logger.info(
-                            "Job %s assigned to worker %s",
-                            job_id,
-                            matched_worker.id,
-                        )
-                        return
-
+            # Handle database errors and unexpected exceptions during matching attempts
             except SQLAlchemyError as db_error:
                 logger.error(
                     "Database error during attempt %s for job %s: %s",
@@ -197,23 +164,31 @@ async def run_matching(job_id: UUID) -> None:
                     job_id,
                     db_error,
                 )
+            # Catch-all for any other exceptions to prevent crashing the matching loop
             except Exception:
                 logger.exception(
                     "Unexpected error during matching attempt %s",
                     attempt + 1,
                 )
 
+            #  wait for expiry FIRST
+            await asyncio.sleep(JOB_EXPIRY_SECONDS)
+
+            # then retry delay
             await asyncio.sleep(RETRY_DELAY_SECONDS)
 
+        # If we exhaust all attempts without a match, mark job as no_worker_match and notify company
         with SessionLocal() as db:
             job = db.query(JobPostingModel).filter(JobPostingModel.id == job_id).first()
 
             if job and job.status == "searching":
-                job.status = "no_match"
+                job.status = "no_worker_match"
 
                 try:
                     db.commit()
-                    logger.info("Job %s marked as no_match after timeout.", job_id)
+                    logger.info(
+                        "Job %s marked as no_worker_match after timeout.", job_id
+                    )
 
                     timeout_message = {
                         "type": "MATCH_TIMEOUT",
@@ -233,7 +208,7 @@ async def run_matching(job_id: UUID) -> None:
                 except SQLAlchemyError as commit_error:
                     db.rollback()
                     logger.error(
-                        "Failed to update job %s to no_match: %s",
+                        "Failed to update job %s to no_worker_match: %s",
                         job_id,
                         commit_error,
                     )
@@ -244,3 +219,170 @@ async def run_matching(job_id: UUID) -> None:
             job_id,
             fatal_error,
         )
+
+
+# This function is called from the job creation route after a job is successfully created.
+# It runs in the background and Assign worker automatically and handles the entire matching process for that job, including retries, radius expansion, and notifications.
+# ------------------------Background Matching Engine ------------------------
+# async def run_matching(job_id: UUID) -> None:
+#     """
+#     Background matching engine.
+
+#     Flow:
+#     - Retry up to MAX_ATTEMPTS
+#     - Expand radius each attempt
+#     - Stop if job status changes
+#     - If timeout reached, mark as no_worker_match and notify company websocket
+#     """
+
+#     logger.info("Matching started for Job: %s", job_id)
+
+#     try:
+#         for attempt in range(MAX_ATTEMPTS):
+#             radius = calculate_radius(attempt)
+
+#             try:
+#                 with SessionLocal() as db:
+#                     job = (
+#                         db.query(JobPostingModel)
+#                         .filter(JobPostingModel.id == job_id)
+#                         .first()
+#                     )
+
+#                     if not job:
+#                         logger.warning("Job %s not found. Stopping matching.", job_id)
+#                         return
+
+#                     if job.status != "searching":
+#                         logger.info(
+#                             "Job %s status changed to %s. Stopping matching.",
+#                             job_id,
+#                             job.status,
+#                         )
+#                         return
+
+#                     workers = find_matching_workers(db, job, radius)
+
+#                     logger.info(
+#                         "Attempt %s/%s | Radius: %sm | Workers Found: %s",
+#                         attempt + 1,
+#                         MAX_ATTEMPTS,
+#                         radius,
+#                         len(workers),
+#                     )
+
+#                     if workers:
+#                         matched_worker = workers[0]
+
+#                         job.status = "Assigned"
+#                         job.assigned_worker_id = matched_worker.id
+#                         job.assigned_at = func.now()
+#                         matched_worker.is_available = False
+
+#                         try:
+#                             db.commit()
+#                         except SQLAlchemyError as commit_error:
+#                             db.rollback()
+#                             logger.error(
+#                                 "Failed to assign worker for job %s: %s",
+#                                 job_id,
+#                                 commit_error,
+#                             )
+#                             continue
+
+#                         # Send notification to matched worker
+#                         await manager.send_to_user(
+#                             "workers",
+#                             matched_worker.id,
+#                             {
+#                                 "type": "JOB_ASSIGNED",
+#                                 "job_id": job.id,
+#                                 "work_address": job.work_address,
+#                                 "scheduled_duration": job.scheduled_duration,
+#                                 "duration_type": job.duration_type,
+#                                 "wage": job.wage,
+#                                 "workers_required": job.workers,
+#                                 "phone_number": job.phone_number,
+#                                 "status": "Assigned",
+#                             },
+#                         )
+
+#                         company_message = {
+#                             "type": "WORKER_MATCHED",
+#                             "job_id": job.id,
+#                             "worker_id": matched_worker.id,
+#                             "worker_name": matched_worker.name,
+#                             "status": "Assigned",
+#                         }
+#                         company_id = getattr(job, "company_id", None)
+#                         if company_id:
+#                             # Send notification to company after worker assignment
+#                             await manager.send_to_user(
+#                                 "companies",
+#                                 company_id,
+#                                 company_message,
+#                             )
+
+#                         logger.info(
+#                             "Job %s assigned to worker %s",
+#                             job_id,
+#                             matched_worker.id,
+#                         )
+#                         return
+#             # Handle database errors and unexpected exceptions during matching attempts
+#             except SQLAlchemyError as db_error:
+#                 logger.error(
+#                     "Database error during attempt %s for job %s: %s",
+#                     attempt + 1,
+#                     job_id,
+#                     db_error,
+#                 )
+#             # Catch-all for any other exceptions to prevent crashing the matching loop
+#             except Exception:
+#                 logger.exception(
+#                     "Unexpected error during matching attempt %s",
+#                     attempt + 1,
+#                 )
+
+#             await asyncio.sleep(RETRY_DELAY_SECONDS)
+
+#         # If we exhaust all attempts without a match, mark job as no_worker_match and notify company
+#         with SessionLocal() as db:
+#             job = db.query(JobPostingModel).filter(JobPostingModel.id == job_id).first()
+
+#             if job and job.status == "searching":
+#                 job.status = "no_worker_match"
+
+#                 try:
+#                     db.commit()
+#                     logger.info("Job %s marked as no_worker_match after timeout.", job_id)
+
+#                     timeout_message = {
+#                         "type": "MATCH_TIMEOUT",
+#                         "job_id": job_id,
+#                         "status": "NoWorkerMatch",
+#                     }
+#                     company_id = getattr(job, "company_id", None)
+#                     if company_id:
+#                         await manager.send_to_user(
+#                             "companies",
+#                             company_id,
+#                             timeout_message,
+#                         )
+#                     # else:
+#                     #     # Fallback when job has no company_id relation.
+#                     #     await manager.broadcast("companies", timeout_message)
+#                 except SQLAlchemyError as commit_error:
+#                     db.rollback()
+#                     logger.error(
+#                         "Failed to update job %s to no_worker_match: %s",
+#                         job_id,
+#                         commit_error,
+#                     )
+
+#     except Exception as fatal_error:
+#         logger.exception(
+#             "Critical failure in run_matching for job %s: %s",
+#             job_id,
+#             fatal_error,
+#         )

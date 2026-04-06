@@ -56,6 +56,35 @@ async def create_job_post(
 # ------------------------END Job Post Route ------------------------
 
 
+# ------------------------Accept Job Route ------------------------
+@router.post("/accept", status_code=status.HTTP_200_OK)
+@limiter.limit("30/minute")
+def accept_job(
+    request: Request,
+    job_id: UUID,
+    worker_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """
+    Worker accepts a job.
+    """
+
+    result = accept_job_service(job_id=job_id, worker_id=worker_id, db=db)
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Job already assigned to another worker",
+        )
+
+    return custom_response(
+        success=True,
+        message="Job accepted successfully",
+        data=result,
+        code=status.HTTP_200_OK,
+    )
+
+
 # ------------------------GET All Job Post Route ------------------------
 @router.get("/get_all_job_posts", status_code=status.HTTP_200_OK)
 @limiter.limit("30/minute")
@@ -96,21 +125,3 @@ def get_job_post_by_id(request: Request, job_id: str, db: Session = Depends(get_
 
 
 # ------------------------END GET Job Post By ID Route ------------------------
-
-
-#
-@router.post("/jobs/{job_id}/accept")
-@limiter.limit("30/minute")
-def accept_job(
-    request: Request,
-    job_id: UUID,
-    worker_id: UUID,
-    db: Session = Depends(get_db),
-):
-    result = accept_job_service(job_id=job_id, worker_id=worker_id, db=db)
-    return custom_response(
-        success=True,
-        message="Job assigned successfully",
-        data=result,
-        code=status.HTTP_200_OK,
-    )
