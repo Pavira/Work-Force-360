@@ -1,11 +1,136 @@
 from uuid import UUID
 
-from sqlalchemy.orm import Session, selectinload
 from fastapi import HTTPException, status
-from app.models.industry_skill_models import IndustryTypeModel
 from geoalchemy2.shape import to_shape
+from sqlalchemy import func, or_
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.company_models import CompanyModel
+from app.models.industry_skill_models import IndustryTypeModel
+
+VALID_SEARCH_TYPES = {"company_name", "phone", "email"}
+
+
+def _build_company_status_query(db: Session, target_status: str):
+    return db.query(CompanyModel).filter(
+        CompanyModel.status == target_status,
+        CompanyModel.is_active.is_(True),
+    )
+
+
+def _apply_search_filters(query, search_term: str | None, search_type: str | None):
+    if not search_term:
+        return query
+
+    if search_type not in VALID_SEARCH_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid search_type. Allowed values: company_name, phone, email",
+        )
+
+    term = f"%{search_term.strip()}%"
+    if search_type == "company_name":
+        return query.filter(CompanyModel.company_name.ilike(term))
+    if search_type == "phone":
+        # Search both auth and contact phone fields to support existing records.
+        return query.filter(
+            or_(
+                CompanyModel.auth_phone.ilike(term),
+                CompanyModel.contact_phone.ilike(term),
+            )
+        )
+    return query.filter(CompanyModel.contact_email.ilike(term))
+
+
+def _get_status_counts(db: Session) -> dict:
+    rows = (
+        db.query(CompanyModel.status, func.count(CompanyModel.id))
+        .filter(
+            CompanyModel.is_active.is_(True),
+            CompanyModel.status.in_(["approved", "unapproved", "draft"]),
+        )
+        .group_by(CompanyModel.status)
+        .all()
+    )
+    status_count_map = {status_name: count for status_name, count in rows}
+    return {
+        "approved_count": status_count_map.get("approved", 0),
+        "unapproved_count": status_count_map.get("unapproved", 0),
+        "draft_count": status_count_map.get("draft", 0),
+        "approved": status_count_map.get("approved", 0),
+        "unapproved": status_count_map.get("unapproved", 0),
+        "draft": status_count_map.get("draft", 0),
+    }
+
+
+def _paginate_company_query(query, page: int, page_size: int, cursor: str | None):
+    ordered_query = query.order_by(CompanyModel.id.asc())
+
+    if cursor:
+        try:
+            cursor_uuid = UUID(str(cursor))
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid cursor format. Expected UUID string.",
+            ) from exc
+
+        items = (
+            ordered_query.filter(CompanyModel.id > cursor_uuid).limit(page_size).all()
+        )
+        next_cursor = str(items[-1].id) if len(items) == page_size else None
+        prev_cursor = str(items[0].id) if items else None
+        return items, 1, next_cursor, prev_cursor
+
+    offset = (page - 1) * page_size
+    items = ordered_query.offset(offset).limit(page_size).all()
+    return items, page, None, None
+
+
+def _get_companies_by_status_service(
+    db: Session,
+    target_status: str,
+    page: int = 1,
+    page_size: int = 20,
+    cursor: str | None = None,
+    search_term: str | None = None,
+    search_type: str | None = None,
+) -> dict:
+    if page < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="page must be greater than or equal to 1",
+        )
+    if page_size < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="page_size must be greater than or equal to 1",
+        )
+
+    query = _build_company_status_query(db=db, target_status=target_status)
+    query = _apply_search_filters(
+        query=query,
+        search_term=search_term,
+        search_type=search_type,
+    )
+
+    total_count = query.count()
+    items, resolved_page, next_cursor, prev_cursor = _paginate_company_query(
+        query=query,
+        page=page,
+        page_size=page_size,
+        cursor=cursor,
+    )
+
+    return {
+        "items": items,
+        "total_count": total_count,
+        "page": resolved_page,
+        "page_size": page_size,
+        "next_cursor": next_cursor,
+        "prev_cursor": prev_cursor,
+        **_get_status_counts(db=db),
+    }
 
 
 # -----------------------Get All Approved Company details Service----------------------- #
@@ -13,59 +138,24 @@ def get_all_approved_companies_service(
     db: Session,
     page: int = 1,
     page_size: int = 20,
+    cursor: str | None = None,
+    search_term: str | None = None,
+    search_type: str | None = None,
 ) -> dict:
     try:
-        offset = (page - 1) * page_size
-        approved_companies = (
-            db.query(CompanyModel)
-            .filter(
-                CompanyModel.status == "approved",
-                CompanyModel.is_active.is_(True),
-            )
-            .offset(offset)
-            .limit(page_size)
-            .all()
+        return _get_companies_by_status_service(
+            db=db,
+            target_status="approved",
+            page=page,
+            page_size=page_size,
+            cursor=cursor,
+            search_term=search_term,
+            search_type=search_type,
         )
-
-        approved_companies_count = (
-            db.query(CompanyModel)
-            .filter(
-                CompanyModel.status == "approved",
-                CompanyModel.is_active.is_(True),
-            )
-            .count()
-        )
-
-        unapproved_companies_count = (
-            db.query(CompanyModel)
-            .filter(
-                CompanyModel.status == "unapproved",
-                CompanyModel.is_active.is_(True),
-            )
-            .count()
-        )
-
-        draft_companies_count = (
-            db.query(CompanyModel)
-            .filter(
-                CompanyModel.status == "draft",
-                CompanyModel.is_active.is_(True),
-            )
-            .count()
-        )
-
-        return {
-            "approved_companies": approved_companies,
-            "approved_companies_count": approved_companies_count,
-            "unapproved_companies_count": unapproved_companies_count,
-            "draft_companies_count": draft_companies_count,
-            "page": page,
-            "page_size": page_size,
-        }
     except HTTPException:
         raise
     except Exception as e:
-        print("DB ERROR ðŸ‘‰", e)  # or logger.exception(e)
+        print("DB ERROR", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error fetching approved company details",
@@ -80,59 +170,24 @@ def get_all_unapproved_companies_service(
     db: Session,
     page: int = 1,
     page_size: int = 20,
+    cursor: str | None = None,
+    search_term: str | None = None,
+    search_type: str | None = None,
 ) -> dict:
     try:
-        offset = (page - 1) * page_size
-        unapproved_companies = (
-            db.query(CompanyModel)
-            .filter(
-                CompanyModel.status == "unapproved",
-                CompanyModel.is_active.is_(True),
-            )
-            .offset(offset)
-            .limit(page_size)
-            .all()
+        return _get_companies_by_status_service(
+            db=db,
+            target_status="unapproved",
+            page=page,
+            page_size=page_size,
+            cursor=cursor,
+            search_term=search_term,
+            search_type=search_type,
         )
-
-        unapproved_companies_count = (
-            db.query(CompanyModel)
-            .filter(
-                CompanyModel.status == "unapproved",
-                CompanyModel.is_active.is_(True),
-            )
-            .count()
-        )
-
-        approved_companies_count = (
-            db.query(CompanyModel)
-            .filter(
-                CompanyModel.status == "approved",
-                CompanyModel.is_active.is_(True),
-            )
-            .count()
-        )
-
-        draft_companies_count = (
-            db.query(CompanyModel)
-            .filter(
-                CompanyModel.status == "draft",
-                CompanyModel.is_active.is_(True),
-            )
-            .count()
-        )
-
-        return {
-            "unapproved_companies": unapproved_companies,
-            "unapproved_companies_count": unapproved_companies_count,
-            "approved_companies_count": approved_companies_count,
-            "draft_companies_count": draft_companies_count,
-            "page": page,
-            "page_size": page_size,
-        }
     except HTTPException:
         raise
     except Exception as e:
-        print("DB ERROR Ã°Å¸â€˜â€°", e)  # or logger.exception(e)
+        print("DB ERROR", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error fetching unapproved company details",
@@ -147,59 +202,24 @@ def get_all_draft_companies_service(
     db: Session,
     page: int = 1,
     page_size: int = 20,
+    cursor: str | None = None,
+    search_term: str | None = None,
+    search_type: str | None = None,
 ) -> dict:
     try:
-        offset = (page - 1) * page_size
-        draft_companies = (
-            db.query(CompanyModel)
-            .filter(
-                CompanyModel.status == "draft",
-                CompanyModel.is_active.is_(True),
-            )
-            .offset(offset)
-            .limit(page_size)
-            .all()
+        return _get_companies_by_status_service(
+            db=db,
+            target_status="draft",
+            page=page,
+            page_size=page_size,
+            cursor=cursor,
+            search_term=search_term,
+            search_type=search_type,
         )
-
-        draft_companies_count = (
-            db.query(CompanyModel)
-            .filter(
-                CompanyModel.status == "draft",
-                CompanyModel.is_active.is_(True),
-            )
-            .count()
-        )
-
-        approved_companies_count = (
-            db.query(CompanyModel)
-            .filter(
-                CompanyModel.status == "approved",
-                CompanyModel.is_active.is_(True),
-            )
-            .count()
-        )
-
-        unapproved_companies_count = (
-            db.query(CompanyModel)
-            .filter(
-                CompanyModel.status == "unapproved",
-                CompanyModel.is_active.is_(True),
-            )
-            .count()
-        )
-
-        return {
-            "draft_companies": draft_companies,
-            "draft_companies_count": draft_companies_count,
-            "approved_companies_count": approved_companies_count,
-            "unapproved_companies_count": unapproved_companies_count,
-            "page": page,
-            "page_size": page_size,
-        }
     except HTTPException:
         raise
     except Exception as e:
-        print("DB ERROR ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ¢â‚¬Â°", e)  # or logger.exception(e)
+        print("DB ERROR", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error fetching draft company details",
@@ -361,3 +381,4 @@ def update_company_status_to_unapproved_service(company_id: UUID, db: Session):
 
 
 #  -----------------------End Update Company Status to UnApproved Service----------------------- #
+

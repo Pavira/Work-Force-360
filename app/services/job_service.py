@@ -9,11 +9,15 @@ from shapely.geometry import Point
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.core.websocket import manager
 from app.db.session import SessionLocal
+from app.models.company_models import CompanyModel
 from app.models.job_model import JobPostingModel
 from app.models.worker_models import WorkerRegistrationModel
 from app.schemas.job_schema import JobPostingSchema
+from app.services.fcm_service import send_fcm_notification
 from app.services.matching_service import run_matching
+from app.utils.logger import logger
 
 
 async def create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
@@ -184,8 +188,34 @@ def get_job_post_by_id_service(job_id: str, db: Session) -> dict:
 
 
 # ------------------------Accept Job Service ------------------------
-def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict:
+async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict:
     try:
+        job = (
+            db.query(JobPostingModel)
+            .filter(
+                JobPostingModel.id == job_id,
+                JobPostingModel.status == "searching",
+            )
+            .first()
+        )
+
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Job already taken",
+            )
+
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.id == worker_id)
+            .first()
+        )
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker not found",
+            )
+
         updated = (
             db.query(JobPostingModel)
             .filter(
@@ -207,11 +237,58 @@ def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict:
                 detail="Job already taken",
             )
 
-        db.query(WorkerRegistrationModel).filter(
-            WorkerRegistrationModel.id == worker_id
-        ).update({"is_available": False})
+        worker.is_available = False
+
+        payload = {
+            "type": "WORKER_ASSIGNED",
+            "job_id": str(job_id),
+            "worker_id": str(worker_id),
+            "worker_name": worker.name,
+            "status": "assigned",
+        }
 
         db.flush()
+
+        company_id = getattr(job, "company_id", None)
+        if company_id:
+            try:
+                await manager.send_to_user(
+                    "companies",
+                    company_id,
+                    payload,
+                )
+            except Exception:
+                logger.exception(
+                    "Failed to send company websocket notification for job_id=%s company_id=%s",
+                    job_id,
+                    company_id,
+                )
+
+            company = (
+                db.query(CompanyModel).filter(CompanyModel.id == company_id).first()
+            )
+            company_fcm_token = getattr(company, "fcm_token", None) if company else None
+
+            if company_fcm_token:
+                try:
+                    await send_fcm_notification(
+                        company_fcm_token,
+                        payload,
+                        title="Worker Assigned ✅",
+                        body="A worker has accepted your job",
+                    )
+                except Exception:
+                    logger.exception(
+                        "Failed to send company FCM notification for job_id=%s company_id=%s",
+                        job_id,
+                        company_id,
+                    )
+        else:
+            logger.warning(
+                "No company_id found on job_id=%s, skipped company notifications",
+                job_id,
+            )
+
         return {"message": "Job Assigned"}
     except HTTPException:
         raise

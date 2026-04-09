@@ -59,7 +59,7 @@ async def create_job_post(
 # ------------------------Accept Job Route ------------------------
 @router.post("/accept", status_code=status.HTTP_200_OK)
 @limiter.limit("30/minute")
-def accept_job(
+async def accept_job(
     request: Request,
     job_id: UUID,
     worker_id: UUID,
@@ -69,7 +69,7 @@ def accept_job(
     Worker accepts a job.
     """
 
-    result = accept_job_service(job_id=job_id, worker_id=worker_id, db=db)
+    result = await accept_job_service(job_id=job_id, worker_id=worker_id, db=db)
 
     if not result:
         raise HTTPException(

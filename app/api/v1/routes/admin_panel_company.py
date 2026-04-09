@@ -27,6 +27,10 @@ router = APIRouter()
 def get_all_approved_companies(
     request: Request,  # REQUIRED by SlowAPI
     page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    cursor: str | None = Query(None),
+    search_term: str | None = Query(None),
+    search_type: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
     """
@@ -35,7 +39,10 @@ def get_all_approved_companies(
     company_details = get_all_approved_companies_service(
         db=db,
         page=page,
-        page_size=20,
+        page_size=page_size,
+        cursor=cursor,
+        search_term=search_term,
+        search_type=search_type,
     )
 
     return custom_response(
@@ -58,6 +65,10 @@ def get_all_approved_companies(
 def get_all_unapproved_companies(
     request: Request,  # REQUIRED by SlowAPI
     page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    cursor: str | None = Query(None),
+    search_term: str | None = Query(None),
+    search_type: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
     """
@@ -66,7 +77,10 @@ def get_all_unapproved_companies(
     company_details = get_all_unapproved_companies_service(
         db=db,
         page=page,
-        page_size=20,
+        page_size=page_size,
+        cursor=cursor,
+        search_term=search_term,
+        search_type=search_type,
     )
 
     return custom_response(
@@ -89,6 +103,10 @@ def get_all_unapproved_companies(
 def get_all_draft_companies(
     request: Request,  # REQUIRED by SlowAPI
     page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    cursor: str | None = Query(None),
+    search_term: str | None = Query(None),
+    search_type: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
     """
@@ -97,7 +115,10 @@ def get_all_draft_companies(
     company_details = get_all_draft_companies_service(
         db=db,
         page=page,
-        page_size=20,
+        page_size=page_size,
+        cursor=cursor,
+        search_term=search_term,
+        search_type=search_type,
     )
 
     return custom_response(

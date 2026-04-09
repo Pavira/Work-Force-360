@@ -14,6 +14,7 @@ from app.schemas.worker_schema import (
     WorkerAddressUpdateSchema,
     WorkerBankDetailsSchema,
     WorkerDocumentCreateSchema,
+    WorkerFcmTokenUpdateSchema,
     WorkerLogoUpdateSchema,
     WorkerRegistrationSchema,
     WorkerSkillsUpdateSchema,
@@ -34,6 +35,7 @@ from app.services.worker_service import (
     update_worker_status_to_approved_service,
     update_worker_logo_service,
     update_worker_address_service,
+    update_worker_fcm_token_service,
     update_worker_skills_service,
     worker_name_and_status_service,
     worker_profile_exist_service,
@@ -411,6 +413,31 @@ def update_worker_skills(
 
 
 # -----------------------End Update Worker Skills----------------------- #
+
+
+@router.post("/update-fcm-token", status_code=status.HTTP_200_OK)
+@limiter.limit("60/minute")
+def update_worker_fcm_token(
+    request: Request,
+    worker_id: UUID,
+    fcm_token: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Update worker FCM token.
+    """
+    worker = update_worker_fcm_token_service(
+        worker_id=worker_id,
+        fcm_token=fcm_token,
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker FCM token updated successfully",
+        data={"id": worker.id},
+        code=status.HTTP_200_OK,
+    )
 
 
 # -----------------------Add Worker Skill Category----------------------- #

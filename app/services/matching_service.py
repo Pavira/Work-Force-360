@@ -20,6 +20,7 @@ from app.core.websocket import manager
 from app.db.session import SessionLocal
 from app.models.job_model import JobPostingModel
 from app.models.worker_models import WorkerRegistrationModel, WorkerSubCategoryModel
+from app.services.fcm_service import send_fcm_notification
 from app.utils.logger import logger
 
 
@@ -131,17 +132,17 @@ async def run_matching(job_id: UUID) -> None:
                         len(workers),
                     )
 
+                    # If worker found
                     if workers:
                         payload = {
                             "type": "NEW_JOB",
                             "job_id": str(job.id),
-                            # "description": job.description,
                             "work_address": job.work_address,
                             "wage": str(job.wage),
                             "workers_required": job.workers,
                             "expires_in": JOB_EXPIRY_SECONDS,
                         }
-                        # ✅ send to workers
+                        # send job notification to workers via websocket
                         for worker in workers:
                             try:
                                 await manager.send_to_user(
@@ -149,12 +150,27 @@ async def run_matching(job_id: UUID) -> None:
                                     worker.id,
                                     payload,
                                 )
+                                logger.info(
+                                    "Job %s sent to worker %s",
+                                    job.id,
+                                    worker.id,
+                                )
+
                             except Exception:
                                 logger.exception(
                                     "Failed to send job %s to worker %s",
                                     job.id,
                                     worker.id,
                                 )
+                            # send job notification to worker via FCM if token exists (fire-and-forget)
+                            # if worker.fcm_token:
+                            #     # Fire-and-forget so websocket flow is not blocked by FCM I/O.
+                            #     asyncio.create_task(
+                            #         send_fcm_notification(
+                            #             token=worker.fcm_token,
+                            #             data=payload,
+                            #         )
+                            #     )
 
             # Handle database errors and unexpected exceptions during matching attempts
             except SQLAlchemyError as db_error:

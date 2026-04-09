@@ -1,4 +1,5 @@
 from typing import List, Optional
+from uuid import UUID
 from pydantic import BaseModel, Field
 
 
@@ -85,3 +86,8 @@ class WorkerBankDetailsSchema(BaseModel):
 
 class WorkerSkillsUpdateSchema(BaseModel):
     categories: List[CategorySelectionSchema] = Field(default_factory=list)
+
+
+class WorkerFcmTokenUpdateSchema(BaseModel):
+    worker_id: UUID = Field(..., example="123e4567-e89b-12d3-a456-426614174000")
+    fcm_token: str = Field(..., min_length=1, example="fcm_registration_token")

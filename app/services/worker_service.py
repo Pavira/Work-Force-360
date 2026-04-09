@@ -24,6 +24,7 @@ from app.schemas.worker_schema import (
     WorkerRegistrationSchema,
     WorkerSkillsUpdateSchema,
 )
+from app.utils.logger import logger
 
 
 # Helper function for s3 upload url
@@ -654,6 +655,7 @@ def worker_name_and_status_service(
             # "statusApprovalMessageShown": worker.status_approval_message_shown,
             "showApprovalMessage": show_approval_message,
             "workerId": str(worker.id),
+            # "fcmToken": worker.fcm_token,
         }
 
     except HTTPException:
@@ -1180,3 +1182,46 @@ def update_worker_status_to_approved_service(worker_id: UUID, db: Session):
 
 
 # -----------------------End Update Worker Status to Approved Service----------------------- #
+
+
+def update_worker_fcm_token_service(
+    worker_id: UUID,
+    fcm_token: str,
+    db: Session,
+) -> WorkerRegistrationModel:
+    """
+    Update worker FCM token (single-device support).
+    """
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.id == worker_id)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        normalized_token = fcm_token.strip()
+        if not normalized_token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="fcm_token cannot be empty",
+            )
+
+        worker.fcm_token = normalized_token
+        db.flush()
+        logger.info("FCM token updated for worker_id=%s", worker_id)
+        return worker
+
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Failed to update FCM token for worker_id=%s", worker_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating worker FCM token",
+        )
