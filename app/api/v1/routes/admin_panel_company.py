@@ -20,7 +20,7 @@ router = APIRouter()
 
 # -----------------------Get All Approved Companies----------------------- #
 @router.get(
-    "/all_approved_companies",
+    "/approved",
     status_code=status.HTTP_200_OK,
 )
 @limiter.limit("10/minute")
@@ -58,7 +58,7 @@ def get_all_approved_companies(
 
 # -----------------------Get All Unapproved Companies----------------------- #
 @router.get(
-    "/all_unapproved_companies",
+    "/unapproved",
     status_code=status.HTTP_200_OK,
 )
 @limiter.limit("10/minute")
@@ -96,7 +96,7 @@ def get_all_unapproved_companies(
 
 # -----------------------Get All Draft Companies----------------------- #
 @router.get(
-    "/all_draft_companies",
+    "/draft",
     status_code=status.HTTP_200_OK,
 )
 @limiter.limit("10/minute")

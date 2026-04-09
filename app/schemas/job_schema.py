@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, HttpUrl
 from typing import Optional
 from datetime import date, datetime, time
-
+from uuid import UUID
 
 # ------------------------
 # Job Post Schema
@@ -67,3 +67,8 @@ class JobPostingSchema(BaseModel):
     specialInstructions: Optional[str] = Field(
         None, example="Report at main gate by 8:45 AM"
     )
+
+
+class AcceptJobRequest(BaseModel):
+    job_id: UUID
+    worker_id: UUID

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.firebase_auth import get_current_user
 from app.core.limiter import limiter
 from app.db.session import get_db
-from app.schemas.job_schema import JobPostingSchema
+from app.schemas.job_schema import AcceptJobRequest, JobPostingSchema
 from app.services.job_service import (
     accept_job_service,
     create_job_post_service,
@@ -61,15 +61,14 @@ async def create_job_post(
 @limiter.limit("30/minute")
 async def accept_job(
     request: Request,
-    job_id: UUID,
-    worker_id: UUID,
+    payload: AcceptJobRequest,
     db: Session = Depends(get_db),
 ):
-    """
-    Worker accepts a job.
-    """
-
-    result = await accept_job_service(job_id=job_id, worker_id=worker_id, db=db)
+    result = await accept_job_service(
+        job_id=payload.job_id,
+        worker_id=payload.worker_id,
+        db=db,
+    )
 
     if not result:
         raise HTTPException(

@@ -1,3 +1,4 @@
+import logging
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -9,18 +10,28 @@ from app.models.company_models import CompanyModel
 from app.models.industry_skill_models import IndustryTypeModel
 
 VALID_SEARCH_TYPES = {"company_name", "phone", "email"}
+logger = logging.getLogger(__name__)
 
 
 def _build_company_status_query(db: Session, target_status: str):
-    return db.query(CompanyModel).filter(
+    return db.query(
+        CompanyModel.id,
+        CompanyModel.company_name,
+        CompanyModel.contact_person_name,
+        CompanyModel.contact_phone,
+        CompanyModel.auth_phone,
+        CompanyModel.status,
+    ).filter(
         CompanyModel.status == target_status,
         CompanyModel.is_active.is_(True),
     )
 
 
 def _apply_search_filters(query, search_term: str | None, search_type: str | None):
-    if not search_term:
+    if search_term is None or not search_term.strip():
         return query
+
+    normalized_term = search_term.strip()
 
     if search_type not in VALID_SEARCH_TYPES:
         raise HTTPException(
@@ -28,7 +39,7 @@ def _apply_search_filters(query, search_term: str | None, search_type: str | Non
             detail="Invalid search_type. Allowed values: company_name, phone, email",
         )
 
-    term = f"%{search_term.strip()}%"
+    term = f"%{normalized_term}%"
     if search_type == "company_name":
         return query.filter(CompanyModel.company_name.ilike(term))
     if search_type == "phone":
@@ -40,6 +51,23 @@ def _apply_search_filters(query, search_term: str | None, search_type: str | Non
             )
         )
     return query.filter(CompanyModel.contact_email.ilike(term))
+
+
+def _safe_parse_cursor(cursor: str | None) -> UUID | None:
+    if cursor is None:
+        return None
+
+    normalized = cursor.strip()
+    if not normalized:
+        return None
+
+    try:
+        return UUID(normalized)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid cursor format. Expected UUID string.",
+        ) from exc
 
 
 def _get_status_counts(db: Session) -> dict:
@@ -57,34 +85,71 @@ def _get_status_counts(db: Session) -> dict:
         "approved_count": status_count_map.get("approved", 0),
         "unapproved_count": status_count_map.get("unapproved", 0),
         "draft_count": status_count_map.get("draft", 0),
-        "approved": status_count_map.get("approved", 0),
-        "unapproved": status_count_map.get("unapproved", 0),
-        "draft": status_count_map.get("draft", 0),
     }
 
 
 def _paginate_company_query(query, page: int, page_size: int, cursor: str | None):
     ordered_query = query.order_by(CompanyModel.id.asc())
+    parsed_cursor = _safe_parse_cursor(cursor)
 
-    if cursor:
-        try:
-            cursor_uuid = UUID(str(cursor))
-        except ValueError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid cursor format. Expected UUID string.",
-            ) from exc
-
-        items = (
-            ordered_query.filter(CompanyModel.id > cursor_uuid).limit(page_size).all()
-        )
-        next_cursor = str(items[-1].id) if len(items) == page_size else None
-        prev_cursor = str(items[0].id) if items else None
-        return items, 1, next_cursor, prev_cursor
+    if parsed_cursor is not None:
+        rows = ordered_query.filter(CompanyModel.id > parsed_cursor).limit(page_size).all()
+        next_cursor = str(rows[-1].id) if len(rows) == page_size else None
+        prev_cursor = str(rows[0].id) if rows else None
+        # Cursor mode is forward-only; page number is not meaningful.
+        resolved_page = 1
+        return rows, resolved_page, next_cursor, prev_cursor
 
     offset = (page - 1) * page_size
-    items = ordered_query.offset(offset).limit(page_size).all()
-    return items, page, None, None
+    rows = ordered_query.offset(offset).limit(page_size).all()
+    return rows, page, None, None
+
+
+def _serialize_company_rows(rows) -> list[dict]:
+    items = []
+    for row in rows:
+        items.append(
+            {
+                "id": str(row.id),
+                "company_name": row.company_name,
+                "contact_person_name": row.contact_person_name,
+                "phone": row.contact_phone or row.auth_phone,
+                "status": row.status,
+            }
+        )
+    return items
+
+
+def _build_company_total_count_query(db: Session, target_status: str):
+    return db.query(func.count(CompanyModel.id)).filter(
+        CompanyModel.status == target_status,
+        CompanyModel.is_active.is_(True),
+    )
+
+
+def _apply_search_filters_to_count_query(
+    query,
+    search_term: str | None,
+    search_type: str | None,
+):
+    if search_term is None or not search_term.strip():
+        return query
+
+    normalized_term = search_term.strip()
+    term = f"%{normalized_term}%"
+
+    if search_type == "company_name":
+        return query.filter(CompanyModel.company_name.ilike(term))
+    if search_type == "phone":
+        return query.filter(
+            or_(
+                CompanyModel.auth_phone.ilike(term),
+                CompanyModel.contact_phone.ilike(term),
+            )
+        )
+    if search_type == "email":
+        return query.filter(CompanyModel.contact_email.ilike(term))
+    return query
 
 
 def _get_companies_by_status_service(
@@ -107,6 +172,12 @@ def _get_companies_by_status_service(
             detail="page_size must be greater than or equal to 1",
         )
 
+    if page_size > 200:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="page_size must be less than or equal to 200",
+        )
+
     query = _build_company_status_query(db=db, target_status=target_status)
     query = _apply_search_filters(
         query=query,
@@ -114,13 +185,21 @@ def _get_companies_by_status_service(
         search_type=search_type,
     )
 
-    total_count = query.count()
-    items, resolved_page, next_cursor, prev_cursor = _paginate_company_query(
+    total_count_query = _build_company_total_count_query(db=db, target_status=target_status)
+    total_count_query = _apply_search_filters_to_count_query(
+        query=total_count_query,
+        search_term=search_term,
+        search_type=search_type,
+    )
+    total_count = total_count_query.scalar() or 0
+
+    rows, resolved_page, next_cursor, prev_cursor = _paginate_company_query(
         query=query,
         page=page,
         page_size=page_size,
         cursor=cursor,
     )
+    items = _serialize_company_rows(rows)
 
     return {
         "items": items,
@@ -154,8 +233,8 @@ def get_all_approved_companies_service(
         )
     except HTTPException:
         raise
-    except Exception as e:
-        print("DB ERROR", e)
+    except Exception:
+        logger.exception("Error fetching approved company details")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error fetching approved company details",
@@ -186,8 +265,8 @@ def get_all_unapproved_companies_service(
         )
     except HTTPException:
         raise
-    except Exception as e:
-        print("DB ERROR", e)
+    except Exception:
+        logger.exception("Error fetching unapproved company details")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error fetching unapproved company details",
@@ -218,8 +297,8 @@ def get_all_draft_companies_service(
         )
     except HTTPException:
         raise
-    except Exception as e:
-        print("DB ERROR", e)
+    except Exception:
+        logger.exception("Error fetching draft company details")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error fetching draft company details",
