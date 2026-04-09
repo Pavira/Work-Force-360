@@ -264,25 +264,25 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
                     company_id,
                 )
 
-            company = (
-                db.query(CompanyModel).filter(CompanyModel.id == company_id).first()
-            )
-            company_fcm_token = getattr(company, "fcm_token", None) if company else None
+            # company = (
+            #     db.query(CompanyModel).filter(CompanyModel.id == company_id).first()
+            # )
+            # company_fcm_token = getattr(company, "fcm_token", None) if company else None
 
-            if company_fcm_token:
-                try:
-                    await send_fcm_notification(
-                        company_fcm_token,
-                        payload,
-                        title="Worker Assigned ✅",
-                        body="A worker has accepted your job",
-                    )
-                except Exception:
-                    logger.exception(
-                        "Failed to send company FCM notification for job_id=%s company_id=%s",
-                        job_id,
-                        company_id,
-                    )
+            # if company_fcm_token:
+            #     try:
+            #         await send_fcm_notification(
+            #             company_fcm_token,
+            #             payload,
+            #             title="Worker Assigned ✅",
+            #             body="A worker has accepted your job",
+            #         )
+            #     except Exception:
+            #         logger.exception(
+            #             "Failed to send company FCM notification for job_id=%s company_id=%s",
+            #             job_id,
+            #             company_id,
+            #         )
         else:
             logger.warning(
                 "No company_id found on job_id=%s, skipped company notifications",
