@@ -28,7 +28,7 @@ class WorkerRegistrationModel(Base):
         UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
     )
     firebase_uid = Column(String, unique=True, nullable=False)
-    fcm_token = Column(Text, nullable=True)
+    # fcm_token = Column(Text, nullable=True)
 
     # ---- Personal Info ----
     name = Column(String(255), nullable=False)
