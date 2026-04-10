@@ -256,63 +256,63 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
         )
         logger.info(
             "Message sent to company_id=%s and worker_id=%s for job_id=%s",
-            company_id,
+            # company_id,
             job.assigned_worker_id,
             job.id,
         )
 
-        company_id = getattr(job, "company_id", None)
-        if company_id:
-            try:
-                # await manager.send_to_user(
-                #     "companies",
-                #     company_id,
-                #     payload,
-                # )
+        # company_id = getattr(job, "company_id", None)
+        # if company_id:
+        #     try:
+        # await manager.send_to_user(
+        #     "companies",
+        #     company_id,
+        #     payload,
+        # )
 
-                await manager.send_to_user(
-                    "workers",
-                    job.assigned_worker_id,
-                    payload,
-                )
-                logger.info(
-                    "Message sent to company_id=%s and worker_id=%s for job_id=%s",
-                    company_id,
-                    job.assigned_worker_id,
-                    job.id,
-                )
+        #     await manager.send_to_user(
+        #         "workers",
+        #         job.assigned_worker_id,
+        #         payload,
+        #     )
+        #     logger.info(
+        #         "Message sent to company_id=%s and worker_id=%s for job_id=%s",
+        #         company_id,
+        #         job.assigned_worker_id,
+        #         job.id,
+        #     )
 
-            except Exception:
-                logger.exception(
-                    "Failed to send company websocket notification for job_id=%s company_id=%s",
-                    job_id,
-                    company_id,
-                )
+        # except Exception:
+        #     logger.exception(
+        #         "Failed to send company websocket notification for job_id=%s company_id=%s",
+        #         job_id,
+        #         company_id,
+        #     )
 
-            # company = (
-            #     db.query(CompanyModel).filter(CompanyModel.id == company_id).first()
-            # )
-            # company_fcm_token = getattr(company, "fcm_token", None) if company else None
+        # company = (
+        #     db.query(CompanyModel).filter(CompanyModel.id == company_id).first()
+        # )
+        # company_fcm_token = getattr(company, "fcm_token", None) if company else None
 
-            # if company_fcm_token:
-            #     try:
-            #         await send_fcm_notification(
-            #             company_fcm_token,
-            #             payload,
-            #             title="Worker Assigned ✅",
-            #             body="A worker has accepted your job",
-            #         )
-            #     except Exception:
-            #         logger.exception(
-            #             "Failed to send company FCM notification for job_id=%s company_id=%s",
-            #             job_id,
-            #             company_id,
-            #         )
-        else:
-            logger.warning(
-                "No company_id found on job_id=%s, skipped company notifications",
-                job_id,
-            )
+        # if company_fcm_token:
+        #     try:
+        #         await send_fcm_notification(
+        #             company_fcm_token,
+        #             payload,
+        #             title="Worker Assigned ✅",
+        #             body="A worker has accepted your job",
+        #         )
+        #     except Exception:
+        #         logger.exception(
+        #             "Failed to send company FCM notification for job_id=%s company_id=%s",
+        #             job_id,
+        #             company_id,
+        #         )
+        # else:
+        #     logger.warning(
+        #         "No company_id found on job_id=%s, skipped company notifications",
+        #         job_id,
+        #     )
 
         return {"message": "Job Assigned"}
     except HTTPException:
