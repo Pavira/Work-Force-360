@@ -252,21 +252,21 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
         company_id = getattr(job, "company_id", None)
         if company_id:
             try:
-                await manager.send_to_user(
-                    "companies",
-                    company_id,
-                    payload,
-                )
+                # await manager.send_to_user(
+                #     "companies",
+                #     company_id,
+                #     payload,
+                # )
 
                 await manager.send_to_user(
                     "workers",
-                    worker.id,
+                    job.assigned_worker_id,
                     payload,
                 )
                 logger.info(
                     "Message sent to company_id=%s and worker_id=%s for job_id=%s",
                     company_id,
-                    worker.id,
+                    job.assigned_worker_id,
                     job.id,
                 )
 
