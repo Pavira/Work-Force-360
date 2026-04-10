@@ -257,6 +257,19 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
                     company_id,
                     payload,
                 )
+
+                await manager.send_to_user(
+                    "workers",
+                    worker.id,
+                    payload,
+                )
+                logger.info(
+                    "Message sent to company_id=%s and worker_id=%s for job_id=%s",
+                    company_id,
+                    worker.id,
+                    job.id,
+                )
+
             except Exception:
                 logger.exception(
                     "Failed to send company websocket notification for job_id=%s company_id=%s",
