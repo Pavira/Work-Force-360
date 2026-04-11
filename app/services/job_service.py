@@ -245,7 +245,10 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
             "Worker %s accepted job %s, updating database and sending notifications",
         )
 
+        print("DB UPDATING...")
         db.flush()
+        db.commit()
+        print("DB COMMITTED")
 
         payload = {
             "type": "WORKER_ASSIGNED",
