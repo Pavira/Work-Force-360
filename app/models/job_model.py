@@ -23,6 +23,9 @@ class JobPostingModel(Base):
     id = Column(
         UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
     )
+    company_id = Column(
+        UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True
+    )
 
     # ---- References ----
     skill_category_id = Column(

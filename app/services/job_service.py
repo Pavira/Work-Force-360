@@ -28,6 +28,7 @@ async def create_job_post_service(payload: JobPostingSchema, db: Session) -> dic
         )
 
         job = JobPostingModel(
+            company_id=payload.companyId,
             skill_category_id=payload.skillCategoryId,
             sub_category_id=payload.subCategoryId,
             industry_type_id=payload.industryTypeId,
@@ -134,6 +135,7 @@ def get_job_post_by_id_service(job_id: str, db: Session) -> dict:
         point = to_shape(job_post.location) if job_post.location else None
         return {
             "id": str(job_post.id),
+            "companyId": str(job_post.company_id),
             "skillCategoryId": str(job_post.skill_category_id),
             "subCategoryId": (
                 str(job_post.sub_category_id) if job_post.sub_category_id else None
@@ -239,6 +241,12 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
 
         worker.is_available = False
 
+        logger.info(
+            "Worker %s accepted job %s, updating database and sending notifications",
+        )
+
+        db.flush()
+
         payload = {
             "type": "WORKER_ASSIGNED",
             "job_id": str(job_id),
@@ -247,47 +255,37 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
             "status": "assigned",
         }
 
-        db.flush()
-
-        await manager.send_to_user(
-            "workers",
-            job.assigned_worker_id,
-            payload,
-        )
+        company_id = getattr(job, "company_id", None)
         logger.info(
-            "Message sent to company_id=%s and worker_id=%s for job_id=%s",
-            # company_id,
-            job.assigned_worker_id,
-            job.id,
+            "Prepared payload for job assignment: %s, company_id=%s",
+            payload,
+            company_id,
         )
+        if company_id:
+            try:
+                await manager.send_to_user(
+                    "companies",
+                    company_id,
+                    payload,
+                )
 
-        # company_id = getattr(job, "company_id", None)
-        # if company_id:
-        #     try:
-        # await manager.send_to_user(
-        #     "companies",
-        #     company_id,
-        #     payload,
-        # )
+                # await manager.send_to_user(
+                #     "workers",
+                #     payload,
+                # )
+                logger.info(
+                    "Message sent to company_id=%s and worker_id=%s for job_id=%s",
+                    company_id,
+                    job.assigned_worker_id,
+                    job.id,
+                )
 
-        #     await manager.send_to_user(
-        #         "workers",
-        #         job.assigned_worker_id,
-        #         payload,
-        #     )
-        #     logger.info(
-        #         "Message sent to company_id=%s and worker_id=%s for job_id=%s",
-        #         company_id,
-        #         job.assigned_worker_id,
-        #         job.id,
-        #     )
-
-        # except Exception:
-        #     logger.exception(
-        #         "Failed to send company websocket notification for job_id=%s company_id=%s",
-        #         job_id,
-        #         company_id,
-        #     )
+            except Exception:
+                logger.exception(
+                    "Failed to send company websocket notification for job_id=%s company_id=%s",
+                    job_id,
+                    company_id,
+                )
 
         # company = (
         #     db.query(CompanyModel).filter(CompanyModel.id == company_id).first()

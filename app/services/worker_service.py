@@ -655,7 +655,7 @@ def worker_name_and_status_service(
             # "statusApprovalMessageShown": worker.status_approval_message_shown,
             "showApprovalMessage": show_approval_message,
             "workerId": str(worker.id),
-            # "fcmToken": worker.fcm_token,
+            "fcmToken": worker.fcm_token,
         }
 
     except HTTPException:

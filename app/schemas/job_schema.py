@@ -9,6 +9,11 @@ from uuid import UUID
 
 
 class JobPostingSchema(BaseModel):
+    # Company ID
+    companyId: Optional[UUID] = Field(
+        None, example="cd973909-d6e2-4fa7-be1a-3f8f875220f0"
+    )
+
     # Basic info
     skillCategoryId: Optional[str] = Field(
         None, example="cd973909-d6e2-4fa7-be1a-3f8f875220f0"
