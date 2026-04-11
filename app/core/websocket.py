@@ -55,7 +55,13 @@ class ConnectionManager:
 
         self.active_connections[user_type][user_id].append(websocket)
 
-        logger.info(f"{user_type} {user_id} connected.")
+        # logger.info(f"{user_type} {user_id} connected.")
+        logger.info(
+            "CONNECTED → type=%s | user_id='%s' | repr=%r",
+            user_type,
+            user_id,
+            user_id,
+        )
 
     # --------------------------------------------------
     # DISCONNECT
@@ -101,13 +107,19 @@ class ConnectionManager:
         Send a JSON message to all active sockets of a user.
         Automatically removes broken sockets.
         """
+        user_id = str(user_id).strip().lower()
 
-        # logger.info(
-        #     "WS CHECK → %s %s → connections=%s",
-        #     user_type,
-        #     user_id,
-        #     len(connections) if connections else 0,
-        # )
+        logger.info(
+            "WS SEND → type=%s | user_id='%s'",
+            user_type,
+            user_id,
+        )
+
+        logger.info(
+            "AVAILABLE CONNECTION KEYS: %s",
+            list(self.active_connections.get(user_type, {}).keys()),
+        )
+
         connections = self.active_connections.get(user_type, {}).get(user_id)
 
         if not connections:

@@ -200,13 +200,11 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
     """
 
     logger.info("========== ACCEPT JOB START ==========")
-    logger.info("Incoming request | job_id=%s | worker_id=%s", job_id, worker_id)
 
     try:
         # --------------------------------------------------
         # STEP 1: Lock the job row (CRITICAL)
         # --------------------------------------------------
-        logger.info("STEP 1: Fetching job with row-level lock")
 
         job = (
             db.query(JobPostingModel)
@@ -215,8 +213,6 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
             .first()
         )
 
-        logger.info("STEP 1 RESULT: job_found=%s", bool(job))
-
         if not job:
             logger.error("Job not found | job_id=%s", job_id)
             raise HTTPException(
@@ -224,17 +220,9 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
                 detail="Job not found",
             )
 
-        logger.info(
-            "STEP 1 DATA: job_id=%s | current_status=%s | company_id=%s",
-            job.id,
-            job.status,
-            job.company_id,
-        )
-
         # --------------------------------------------------
         # STEP 2: Validate job status
         # --------------------------------------------------
-        logger.info("STEP 2: Validating job status")
 
         if job.status != "searching":
             logger.warning(
@@ -250,7 +238,6 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
         # --------------------------------------------------
         # STEP 3: Fetch worker
         # --------------------------------------------------
-        logger.info("STEP 3: Fetching worker")
 
         worker = (
             db.query(WorkerRegistrationModel)
@@ -258,20 +245,12 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
             .first()
         )
 
-        logger.info("STEP 3 RESULT: worker_found=%s", bool(worker))
-
         if not worker:
             logger.error("Worker not found | worker_id=%s", worker_id)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Worker not found",
             )
-
-        logger.info(
-            "STEP 3 DATA: worker_id=%s | is_available=%s",
-            worker.id,
-            worker.is_available,
-        )
 
         # Optional: Prevent already busy worker from accepting
         if not worker.is_available:
@@ -287,7 +266,6 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
         # --------------------------------------------------
         # STEP 4: Assign job (SAFE - no .update())
         # --------------------------------------------------
-        logger.info("STEP 4: Assigning job to worker")
 
         job.status = "assigned"
         job.assigned_worker_id = worker_id
@@ -295,20 +273,11 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
 
         worker.is_available = False
 
-        logger.info(
-            "STEP 4 SUCCESS: job assigned | job_id=%s | worker_id=%s",
-            job_id,
-            worker_id,
-        )
-
         # --------------------------------------------------
         # STEP 5: Commit transaction
         # --------------------------------------------------
-        logger.info("STEP 5: Committing transaction")
 
         db.commit()
-
-        logger.info("STEP 5 SUCCESS: DB committed")
 
         # Refresh to get latest values
         db.refresh(job)
@@ -334,38 +303,17 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
 
         company_id = job.company_id
 
-        logger.info(
-            "STEP 6 DATA: company_id=%s | payload=%s",
-            company_id,
-            payload,
-        )
-
         # --------------------------------------------------
         # STEP 7: Send WebSocket to company
         # --------------------------------------------------
         if company_id:
             try:
-                logger.info(
-                    "STEP 7: Sending WebSocket to company | company_id=%s",
-                    company_id,
-                )
+                logger.info("STEP 7: Sending WebSocket to company")
+
                 await manager.send_to_user(
                     "companies",
                     str(company_id),
                     payload,
-                )
-                logger.info(
-                    "STEP 8 SUCCESS: WebSocket broadcasted to companies | company_id=%s",
-                    company_id,
-                )
-
-                await manager.broadcast(
-                    "workers",
-                    payload,
-                )
-                logger.info(
-                    "STEP 9 SUCCESS: WebSocket broadcasted to workers | worker_id=%s",
-                    worker_id,
                 )
 
                 # await manager.send_to_user(
@@ -378,11 +326,6 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
                 #     str(worker_id),
                 #     payload,
                 # )
-
-                logger.info(
-                    "STEP 7 SUCCESS: WebSocket sent to company | company_id=%s",
-                    company_id,
-                )
 
             except Exception as ws_error:
                 logger.exception(
