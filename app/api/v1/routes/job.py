@@ -24,8 +24,6 @@ router = APIRouter()
 
 
 # ------------------------ Job Post Route ------------------------
-
-
 @router.post("/create_job_post", status_code=status.HTTP_201_CREATED)
 async def create_job_post(
     payload: JobPostingSchema,

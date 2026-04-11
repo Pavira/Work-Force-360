@@ -189,150 +189,360 @@ def get_job_post_by_id_service(job_id: str, db: Session) -> dict:
 # ------------------------END GET Job Post By ID Service ------------------------
 
 
-# ------------------------Accept Job Service ------------------------
 async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict:
+    """
+    Worker accepts a job (race-condition safe).
+
+    Guarantees:
+    - Only ONE worker can accept the job
+    - Prevents duplicate acceptance
+    - Fully traceable logs
+    """
+
+    logger.info("========== ACCEPT JOB START ==========")
+    logger.info("Incoming request | job_id=%s | worker_id=%s", job_id, worker_id)
+
     try:
+        # --------------------------------------------------
+        # STEP 1: Lock the job row (CRITICAL)
+        # --------------------------------------------------
+        logger.info("STEP 1: Fetching job with row-level lock")
+
         job = (
             db.query(JobPostingModel)
-            .filter(
-                JobPostingModel.id == job_id,
-                JobPostingModel.status == "searching",
-            )
+            .filter(JobPostingModel.id == job_id)
+            .with_for_update()  # 🔥 Prevent race condition
             .first()
         )
 
+        logger.info("STEP 1 RESULT: job_found=%s", bool(job))
+
         if not job:
+            logger.error("Job not found | job_id=%s", job_id)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job not found",
+            )
+
+        logger.info(
+            "STEP 1 DATA: job_id=%s | current_status=%s | company_id=%s",
+            job.id,
+            job.status,
+            job.company_id,
+        )
+
+        # --------------------------------------------------
+        # STEP 2: Validate job status
+        # --------------------------------------------------
+        logger.info("STEP 2: Validating job status")
+
+        if job.status != "searching":
+            logger.warning(
+                "Job already taken | job_id=%s | current_status=%s",
+                job_id,
+                job.status,
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Job already taken",
             )
+
+        # --------------------------------------------------
+        # STEP 3: Fetch worker
+        # --------------------------------------------------
+        logger.info("STEP 3: Fetching worker")
 
         worker = (
             db.query(WorkerRegistrationModel)
             .filter(WorkerRegistrationModel.id == worker_id)
             .first()
         )
+
+        logger.info("STEP 3 RESULT: worker_found=%s", bool(worker))
+
         if not worker:
+            logger.error("Worker not found | worker_id=%s", worker_id)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Worker not found",
             )
 
-        updated = (
-            db.query(JobPostingModel)
-            .filter(
-                JobPostingModel.id == job_id,
-                JobPostingModel.status == "searching",
-            )
-            .update(
-                {
-                    "status": "assigned",
-                    "assigned_worker_id": worker_id,
-                    "assigned_at": func.now(),
-                }
-            )
+        logger.info(
+            "STEP 3 DATA: worker_id=%s | is_available=%s",
+            worker.id,
+            worker.is_available,
         )
 
-        logger.info("Attempting to assign job_id=%s to worker_id=%s, update result: %s")
-
-        if updated == 0:
+        # Optional: Prevent already busy worker from accepting
+        if not worker.is_available:
+            logger.warning(
+                "Worker not available | worker_id=%s",
+                worker_id,
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Job already taken",
+                detail="Worker is not available",
             )
 
-        logger.info(
-            "Job %s assigned to worker %s, updating worker availability",
-            job_id,
-            worker_id,
-        )
+        # --------------------------------------------------
+        # STEP 4: Assign job (SAFE - no .update())
+        # --------------------------------------------------
+        logger.info("STEP 4: Assigning job to worker")
+
+        job.status = "assigned"
+        job.assigned_worker_id = worker_id
+        job.assigned_at = func.now()
 
         worker.is_available = False
 
         logger.info(
-            "Worker %s accepted job %s, updating database and sending notifications",
+            "STEP 4 SUCCESS: job assigned | job_id=%s | worker_id=%s",
+            job_id,
+            worker_id,
         )
 
-        print("DB UPDATING...")
-        db.flush()
+        # --------------------------------------------------
+        # STEP 5: Commit transaction
+        # --------------------------------------------------
+        logger.info("STEP 5: Committing transaction")
+
         db.commit()
-        print("DB COMMITTED")
+
+        logger.info("STEP 5 SUCCESS: DB committed")
+
+        # Refresh to get latest values
+        db.refresh(job)
+
+        logger.info(
+            "STEP 5 DATA AFTER REFRESH: job_status=%s | assigned_worker_id=%s",
+            job.status,
+            job.assigned_worker_id,
+        )
+
+        # --------------------------------------------------
+        # STEP 6: Prepare WebSocket payload
+        # --------------------------------------------------
+        logger.info("STEP 6: Preparing WebSocket payload")
 
         payload = {
             "type": "WORKER_ASSIGNED",
-            "job_id": str(job_id),
+            "job_id": str(job.id),
             "worker_id": str(worker_id),
             "worker_name": worker.name,
             "status": "assigned",
         }
 
-        company_id = getattr(job, "company_id", None)
+        company_id = job.company_id
+
         logger.info(
-            "Prepared payload for job assignment: %s, company_id=%s",
-            payload,
+            "STEP 6 DATA: company_id=%s | payload=%s",
             company_id,
+            payload,
         )
+
+        # --------------------------------------------------
+        # STEP 7: Send WebSocket to company
+        # --------------------------------------------------
         if company_id:
             try:
+                logger.info(
+                    "STEP 7: Sending WebSocket to company | company_id=%s",
+                    company_id,
+                )
+
                 await manager.send_to_user(
                     "companies",
-                    company_id,
+                    str(company_id),  # 🔥 IMPORTANT: convert to string
                     payload,
                 )
 
-                # await manager.send_to_user(
-                #     "workers",
-                #     payload,
-                # )
                 logger.info(
-                    "Message sent to company_id=%s and worker_id=%s for job_id=%s",
+                    "STEP 7 SUCCESS: WebSocket sent to company | company_id=%s",
                     company_id,
-                    job.assigned_worker_id,
-                    job.id,
                 )
 
-            except Exception:
+            except Exception as ws_error:
                 logger.exception(
-                    "Failed to send company websocket notification for job_id=%s company_id=%s",
-                    job_id,
+                    "STEP 7 ERROR: Failed to send WS | company_id=%s | error=%s",
                     company_id,
+                    ws_error,
                 )
+        else:
+            logger.error(
+                "STEP 7 SKIPPED: No company_id found for job_id=%s",
+                job_id,
+            )
 
-        # company = (
-        #     db.query(CompanyModel).filter(CompanyModel.id == company_id).first()
-        # )
-        # company_fcm_token = getattr(company, "fcm_token", None) if company else None
-
-        # if company_fcm_token:
-        #     try:
-        #         await send_fcm_notification(
-        #             company_fcm_token,
-        #             payload,
-        #             title="Worker Assigned ✅",
-        #             body="A worker has accepted your job",
-        #         )
-        #     except Exception:
-        #         logger.exception(
-        #             "Failed to send company FCM notification for job_id=%s company_id=%s",
-        #             job_id,
-        #             company_id,
-        #         )
-        # else:
-        #     logger.warning(
-        #         "No company_id found on job_id=%s, skipped company notifications",
-        #         job_id,
-        #     )
+        logger.info("========== ACCEPT JOB END ==========")
 
         return {"message": "Job Assigned"}
+
     except HTTPException:
+        logger.warning("ACCEPT JOB FAILED (HTTPException) | job_id=%s", job_id)
         raise
+
     except Exception as e:
-        print("accept_job_service DB ERROR:", str(e))
-        traceback.print_exc()
+        logger.exception(
+            "ACCEPT JOB CRITICAL ERROR | job_id=%s | error=%s",
+            job_id,
+            str(e),
+        )
+        db.rollback()
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error accepting job",
         )
+
+
+# ------------------------Accept Job Service ------------------------
+# async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict:
+#     logger.info("ACCEPT JOB CALLED | job_id=%s | worker_id=%s", job_id, worker_id)
+#     try:
+#         job = (
+#             db.query(JobPostingModel)
+#             .filter(
+#                 JobPostingModel.id == job_id,
+#                 JobPostingModel.status == "searching",
+#             )
+#             .first()
+#         )
+
+#         if not job:
+#             raise HTTPException(
+#                 status_code=status.HTTP_400_BAD_REQUEST,
+#                 detail="Job already taken",
+#             )
+
+#         worker = (
+#             db.query(WorkerRegistrationModel)
+#             .filter(WorkerRegistrationModel.id == worker_id)
+#             .first()
+#         )
+#         if not worker:
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail="Worker not found",
+#             )
+
+#         updated = (
+#             db.query(JobPostingModel)
+#             .filter(
+#                 JobPostingModel.id == job_id,
+#                 JobPostingModel.status == "searching",
+#             )
+#             .update(
+#                 {
+#                     "status": "assigned",
+#                     "assigned_worker_id": worker_id,
+#                     "assigned_at": func.now(),
+#                 }
+#             )
+#         )
+
+#         logger.info(
+#             "Attempting to assign job_id=%s to worker_id=%s, update result: %s ",
+#             job_id,
+#             worker_id,
+#             updated,
+#         )
+
+#         if updated == 0:
+#             raise HTTPException(
+#                 status_code=status.HTTP_400_BAD_REQUEST,
+#                 detail="Job already taken",
+#             )
+
+#         logger.info(
+#             "Job %s assigned to worker %s, updating worker availability",
+#             job_id,
+#             worker_id,
+#         )
+
+#         worker.is_available = False
+
+#         logger.info(
+#             "Worker %s accepted job %s, updating database and sending notifications",
+#             worker_id,
+#             job_id,
+#         )
+
+#         print("DB UPDATING...")
+#         db.flush()
+#         db.commit()
+#         print("DB COMMITTED")
+
+#         payload = {
+#             "type": "WORKER_ASSIGNED",
+#             "job_id": str(job_id),
+#             "worker_id": str(worker_id),
+#             "worker_name": worker.name,
+#             "status": "assigned",
+#         }
+
+#         company_id = getattr(job, "company_id", None)
+#         logger.info(
+#             "Prepared payload for job assignment: %s, company_id=%s",
+#             payload,
+#             company_id,
+#         )
+#         if company_id:
+#             try:
+#                 await manager.send_to_user(
+#                     "companies",
+#                     str(company_id),
+#                     payload,
+#                 )
+
+#                 logger.info(
+#                     "Message sent to company_id=%s and worker_id=%s for job_id=%s",
+#                     company_id,
+#                     job.assigned_worker_id,
+#                     job.id,
+#                 )
+
+#             except Exception:
+#                 logger.exception(
+#                     "Failed to send company websocket notification for job_id=%s company_id=%s",
+#                     job_id,
+#                     company_id,
+#                 )
+
+#         # company = (
+#         #     db.query(CompanyModel).filter(CompanyModel.id == company_id).first()
+#         # )
+#         # company_fcm_token = getattr(company, "fcm_token", None) if company else None
+
+#         # if company_fcm_token:
+#         #     try:
+#         #         await send_fcm_notification(
+#         #             company_fcm_token,
+#         #             payload,
+#         #             title="Worker Assigned ✅",
+#         #             body="A worker has accepted your job",
+#         #         )
+#         #     except Exception:
+#         #         logger.exception(
+#         #             "Failed to send company FCM notification for job_id=%s company_id=%s",
+#         #             job_id,
+#         #             company_id,
+#         #         )
+#         # else:
+#         #     logger.warning(
+#         #         "No company_id found on job_id=%s, skipped company notifications",
+#         #         job_id,
+#         #     )
+
+#         return {"message": "Job Assigned"}
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         print("accept_job_service DB ERROR:", str(e))
+#         traceback.print_exc()
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail="Error accepting job",
+#         )
 
 
 # ------------------------END Accept Job Service ------------------------
