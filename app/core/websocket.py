@@ -101,6 +101,13 @@ class ConnectionManager:
         Send a JSON message to all active sockets of a user.
         Automatically removes broken sockets.
         """
+
+        logger.info(
+            "WS CHECK → %s %s → connections=%s",
+            user_type,
+            user_id,
+            len(connections) if connections else 0,
+        )
         connections = self.active_connections.get(user_type, {}).get(user_id)
 
         if not connections:
