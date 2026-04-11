@@ -14,7 +14,7 @@ select * from worker_documents
 
 -------Temparary Query------------------------
 update workers
-set status_approval_message_shown = false
+set is_available = true
 -------------------------------------------
 
 -- If you want to delete whole table use this command

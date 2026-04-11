@@ -349,21 +349,34 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
                     "STEP 7: Sending WebSocket to company | company_id=%s",
                     company_id,
                 )
-
-                await manager.send_to_user(
+                await manager.broadcast(
                     "companies",
-                    str(company_id),
                     payload,
                 )
-                # await manager.broadcast(
-                #     "workers",
+                logger.info(
+                    "STEP 8 SUCCESS: WebSocket broadcasted to companies | company_id=%s",
+                    company_id,
+                )
+
+                await manager.broadcast(
+                    "workers",
+                    payload,
+                )
+                logger.info(
+                    "STEP 9 SUCCESS: WebSocket broadcasted to workers | worker_id=%s",
+                    worker_id,
+                )
+
+                # await manager.send_to_user(
+                #     "companies",
+                #     str(company_id),
                 #     payload,
                 # )
-                await manager.send_to_user(
-                    "workers",
-                    str(worker_id),
-                    payload,
-                )
+                # await manager.send_to_user(
+                #     "workers",
+                #     str(worker_id),
+                #     payload,
+                # )
 
                 logger.info(
                     "STEP 7 SUCCESS: WebSocket sent to company | company_id=%s",
