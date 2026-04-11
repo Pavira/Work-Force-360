@@ -350,13 +350,9 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
                     company_id,
                 )
 
-                # await manager.send_to_user(
-                #     "companies",
-                #     str(company_id),
-                #     payload,
-                # )
-                await manager.broadcast(
+                await manager.send_to_user(
                     "companies",
+                    str(company_id),
                     payload,
                 )
                 # await manager.broadcast(
