@@ -147,7 +147,7 @@ async def run_matching(job_id: UUID) -> None:
                             try:
                                 await manager.send_to_user(
                                     "workers",
-                                    worker.id,
+                                    str(worker.id),
                                     payload,
                                 )
                                 logger.info(
@@ -215,7 +215,7 @@ async def run_matching(job_id: UUID) -> None:
                     if company_id:
                         await manager.send_to_user(
                             "companies",
-                            company_id,
+                            str(company_id),
                             timeout_message,
                         )
                     # else:

@@ -50,6 +50,10 @@ class ConnectionManager:
         """
         await websocket.accept()
 
+        user_id = str(user_id).strip().lower()
+
+        logger.debug(f"Normalized user_id for connection: {user_id}")
+
         self.active_connections.setdefault(user_type, {})
         self.active_connections[user_type].setdefault(user_id, [])
 
@@ -76,6 +80,8 @@ class ConnectionManager:
         Remove a WebSocket connection from active tracking.
         Does NOT call websocket.close().
         """
+        user_id = str(user_id).strip().lower()
+
         try:
             connections = self.active_connections.get(user_type, {}).get(user_id)
 
@@ -108,6 +114,8 @@ class ConnectionManager:
         Automatically removes broken sockets.
         """
         user_id = str(user_id).strip().lower()
+
+        logger.debug(f"Normalized user_id for send: {user_id}")
 
         logger.info(
             "WS SEND → type=%s | user_id='%s'",
