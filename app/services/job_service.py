@@ -233,11 +233,19 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
             )
         )
 
+        logger.info("Attempting to assign job_id=%s to worker_id=%s, update result: %s")
+
         if updated == 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Job already taken",
             )
+
+        logger.info(
+            "Job %s assigned to worker %s, updating worker availability",
+            job_id,
+            worker_id,
+        )
 
         worker.is_available = False
 
