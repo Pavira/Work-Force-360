@@ -361,7 +361,7 @@ async def accept_job_service(job_id: UUID, worker_id: UUID, db: Session) -> dict
                 # )
                 await manager.send_to_user(
                     "workers",
-                    worker_id,
+                    str(worker_id),
                     payload,
                 )
 
