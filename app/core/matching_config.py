@@ -10,14 +10,14 @@ MAX_RADIUS_METERS: int = 20000
 RADIUS_INCREMENT_METERS: int = 2000
 
 # Delay between retries (seconds)
-RETRY_DELAY_SECONDS: int = 20  # 20 seconds
+RETRY_DELAY_SECONDS: int = 40
 
 
 # Total retry window (seconds)
-TOTAL_RETRY_TIME_SECONDS: int = 60  # 60 seconds
+TOTAL_RETRY_TIME_SECONDS: int = 120
 
 # job expiry time (seconds)
-JOB_EXPIRY_SECONDS: int = 15  # 15 seconds
+JOB_EXPIRY_SECONDS: int = 30
 
 # Total attempts derived from total time and delay
 MAX_ATTEMPTS: int = TOTAL_RETRY_TIME_SECONDS // RETRY_DELAY_SECONDS
