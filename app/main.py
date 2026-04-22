@@ -10,6 +10,7 @@ import uvicorn
 from app.core.config import settings
 from app.api.v1.routes import (
     admin_panel_company,
+    admin_panel_worker,
     auth,
     company,
     company_ws,
@@ -81,6 +82,11 @@ app.include_router(
     admin_panel_company.router,
     prefix="/api/v1/admin_panel_company",
     tags=["Admin Panel - Company"],
+)
+app.include_router(
+    admin_panel_worker.router,
+    prefix="/api/v1/admin_panel_worker",
+    tags=["Admin Panel - Worker"],
 )
 
 # Rate Limiting

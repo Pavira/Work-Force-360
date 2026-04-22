@@ -1,0 +1,224 @@
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, Query, Request, status
+from sqlalchemy.orm import Session
+
+from app.core.limiter import limiter
+from app.db.session import get_db
+from app.services.admin_panel_worker_service import (
+    get_all_approved_workers_service,
+    get_all_draft_workers_service,
+    get_all_unapproved_workers_service,
+    get_worker_details_by_id_service,
+    update_worker_status_to_approved_service,
+    update_worker_status_to_unapproved_service,
+)
+from app.utils.response import custom_response
+
+
+router = APIRouter()
+
+
+# -----------------------Get All Approved Workers----------------------- #
+@router.get(
+    "/approved",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_all_approved_workers(
+    request: Request,  # REQUIRED by SlowAPI
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    cursor: str | None = Query(None),
+    search_term: str | None = Query(None),
+    search_type: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    """
+    Get approved and active workers with backend pagination.
+    """
+    worker_details = get_all_approved_workers_service(
+        db=db,
+        page=page,
+        page_size=page_size,
+        cursor=cursor,
+        search_term=search_term,
+        search_type=search_type,
+    )
+
+    return custom_response(
+        success=True,
+        message="Approved worker details and counts fetched successfully",
+        data=worker_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Get All Approved Workers----------------------- #
+
+
+# -----------------------Get All Unapproved Workers----------------------- #
+@router.get(
+    "/unapproved",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_all_unapproved_workers(
+    request: Request,  # REQUIRED by SlowAPI
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    cursor: str | None = Query(None),
+    search_term: str | None = Query(None),
+    search_type: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    """
+    Get unapproved and active workers with backend pagination.
+    """
+    worker_details = get_all_unapproved_workers_service(
+        db=db,
+        page=page,
+        page_size=page_size,
+        cursor=cursor,
+        search_term=search_term,
+        search_type=search_type,
+    )
+
+    return custom_response(
+        success=True,
+        message="Unapproved worker details and counts fetched successfully",
+        data=worker_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Get All Unapproved Workers----------------------- #
+
+
+# -----------------------Get All Draft Workers----------------------- #
+@router.get(
+    "/draft",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_all_draft_workers(
+    request: Request,  # REQUIRED by SlowAPI
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    cursor: str | None = Query(None),
+    search_term: str | None = Query(None),
+    search_type: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    """
+    Get draft and active workers with backend pagination.
+    """
+    worker_details = get_all_draft_workers_service(
+        db=db,
+        page=page,
+        page_size=page_size,
+        cursor=cursor,
+        search_term=search_term,
+        search_type=search_type,
+    )
+
+    return custom_response(
+        success=True,
+        message="Draft worker details and counts fetched successfully",
+        data=worker_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Get All Draft Workers----------------------- #
+
+
+# -----------------------Get Worker Details by ID----------------------- #
+@router.get(
+    "/{worker_id}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_worker_details_by_id(
+    request: Request,
+    worker_id: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Get worker with full details (basic + skills + bank details + documents)
+    """
+    worker = get_worker_details_by_id_service(db=db, worker_id=worker_id)
+
+    return custom_response(
+        success=True,
+        message="Worker details fetched successfully",
+        data=worker,
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Get Worker Details by ID----------------------- #
+
+
+# -----------------------Update Worker Status to Approved----------------------- #
+@router.patch(
+    "/approve_worker_profile/{worker_id}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def approve_worker_profile(
+    request: Request,  # REQUIRED by SlowAPI
+    worker_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """
+    Update worker status to approved.
+    """
+    worker_db = update_worker_status_to_approved_service(
+        worker_id=worker_id,
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker profile approved successfully",
+        data={
+            "id": worker_db.id,
+        },
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Update Worker Status to Approved----------------------- #
+
+
+# -----------------------Update Worker Status to Unapproved----------------------- #
+@router.patch(
+    "/unapprove/{worker_id}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def unapprove_worker(
+    request: Request,  # REQUIRED by SlowAPI
+    worker_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """
+    Update worker status to unapproved.
+    """
+    worker_db = update_worker_status_to_unapproved_service(
+        worker_id=worker_id,
+        db=db,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker profile unapproved successfully",
+        data={
+            "id": worker_db.id,
+        },
+        code=status.HTTP_200_OK,
+    )
+
+
+# -----------------------End Update Worker Status to Unapproved----------------------- #
