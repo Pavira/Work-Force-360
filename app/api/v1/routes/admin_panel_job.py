@@ -8,6 +8,7 @@ from app.services.admin_panel_job_service import (
     get_all_cancelled_jobs_service,
     get_all_completed_jobs_service,
     get_all_in_progress_jobs_service,
+    get_all_nearest_workers_service,
     get_all_no_worker_match_jobs_service,
     get_all_searching_jobs_service,
     get_job_details_by_id_service,
@@ -220,5 +221,30 @@ def get_job_details_by_id(
         success=True,
         message="Job details fetched successfully",
         data=job,
+        code=status.HTTP_200_OK,
+    )
+
+
+@router.get(
+    "/{job_id}/nearest_workers",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_all_nearest_workers(
+    request: Request,
+    job_id: str,
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    workers = get_all_nearest_workers_service(
+        db=db,
+        job_id=job_id,
+        limit=limit,
+    )
+
+    return custom_response(
+        success=True,
+        message="Nearest workers fetched successfully",
+        data=workers,
         code=status.HTTP_200_OK,
     )

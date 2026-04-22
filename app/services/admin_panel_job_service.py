@@ -3,10 +3,18 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from geoalchemy2.shape import to_shape
-from sqlalchemy import String, func, or_
+from sqlalchemy import String, and_, case, func, or_
 from sqlalchemy.orm import Session
 
+from app.models.company_models import CompanyModel
+from app.models.industry_skill_models import (
+    CategorySkillModel,
+    IndustryTypeModel,
+    SubCategorySkillModel,
+)
 from app.models.job_model import JobPostingModel
+from app.models.worker_models import WorkerRegistrationModel, WorkerSubCategoryModel
+from app.services.matching_service import find_matching_workers
 
 VALID_SEARCH_TYPES = {"contact_name", "phone", "company_id", "worker_id"}
 JOB_STATUSES = [
@@ -63,7 +71,9 @@ def _apply_search_filters(query, search_term: str | None, search_type: str | Non
         )
     if search_type == "company_id":
         return query.filter(func.cast(JobPostingModel.company_id, String).ilike(term))
-    return query.filter(func.cast(JobPostingModel.assigned_worker_id, String).ilike(term))
+    return query.filter(
+        func.cast(JobPostingModel.assigned_worker_id, String).ilike(term)
+    )
 
 
 def _safe_parse_cursor(cursor: str | None) -> UUID | None:
@@ -111,7 +121,11 @@ def _paginate_job_query(query, page: int, page_size: int, cursor: str | None):
     parsed_cursor = _safe_parse_cursor(cursor)
 
     if parsed_cursor is not None:
-        rows = ordered_query.filter(JobPostingModel.id > parsed_cursor).limit(page_size).all()
+        rows = (
+            ordered_query.filter(JobPostingModel.id > parsed_cursor)
+            .limit(page_size)
+            .all()
+        )
         next_cursor = str(rows[-1].id) if len(rows) == page_size else None
         prev_cursor = str(rows[0].id) if rows else None
         resolved_page = 1
@@ -172,7 +186,9 @@ def _apply_search_filters_to_count_query(
     if search_type == "company_id":
         return query.filter(func.cast(JobPostingModel.company_id, String).ilike(term))
     if search_type == "worker_id":
-        return query.filter(func.cast(JobPostingModel.assigned_worker_id, String).ilike(term))
+        return query.filter(
+            func.cast(JobPostingModel.assigned_worker_id, String).ilike(term)
+        )
     return query
 
 
@@ -403,6 +419,7 @@ def get_all_no_worker_match_jobs_service(
         )
 
 
+# -----------------------Get Job Details By ID--------------------- #
 def get_job_details_by_id_service(db: Session, job_id: str) -> dict:
     try:
         try:
@@ -413,33 +430,80 @@ def get_job_details_by_id_service(db: Session, job_id: str) -> dict:
                 detail="Invalid job_id format. Expected UUID string.",
             ) from exc
 
-        job_post = (
-            db.query(JobPostingModel)
+        result = (
+            db.query(
+                JobPostingModel,
+                CompanyModel.company_name.label("company_name"),
+                CategorySkillModel.name.label("skill_category_name"),
+                SubCategorySkillModel.name.label("sub_category_name"),
+                IndustryTypeModel.name.label("industry_type_name"),
+                WorkerRegistrationModel.name.label("assigned_worker_name"),
+            )
+            .outerjoin(
+                CompanyModel,
+                and_(
+                    CompanyModel.id == JobPostingModel.company_id,
+                    CompanyModel.is_active.is_(True),
+                ),
+            )
+            .outerjoin(
+                CategorySkillModel,
+                and_(
+                    CategorySkillModel.id == JobPostingModel.skill_category_id,
+                    CategorySkillModel.is_active.is_(True),
+                ),
+            )
+            .outerjoin(
+                SubCategorySkillModel,
+                and_(
+                    SubCategorySkillModel.id == JobPostingModel.sub_category_id,
+                    SubCategorySkillModel.is_active.is_(True),
+                ),
+            )
+            .outerjoin(
+                IndustryTypeModel,
+                and_(
+                    IndustryTypeModel.id == JobPostingModel.industry_type_id,
+                    IndustryTypeModel.is_active.is_(True),
+                ),
+            )
+            .outerjoin(
+                WorkerRegistrationModel,
+                and_(
+                    WorkerRegistrationModel.id == JobPostingModel.assigned_worker_id,
+                    WorkerRegistrationModel.is_active.is_(True),
+                ),
+            )
             .filter(
                 JobPostingModel.id == parsed_job_id,
                 JobPostingModel.is_active.is_(True),
             )
             .first()
         )
-        if not job_post:
+        if not result:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Job post not found",
             )
 
+        job_post = result[0]
         point = to_shape(job_post.location) if job_post.location else None
         return {
             "id": str(job_post.id),
             "company_id": str(job_post.company_id) if job_post.company_id else None,
+            "company_name": result.company_name,
             "skill_category_id": (
                 str(job_post.skill_category_id) if job_post.skill_category_id else None
             ),
+            "skill_category_name": result.skill_category_name,
             "sub_category_id": (
                 str(job_post.sub_category_id) if job_post.sub_category_id else None
             ),
+            "sub_category_name": result.sub_category_name,
             "industry_type_id": (
                 str(job_post.industry_type_id) if job_post.industry_type_id else None
             ),
+            "industry_type_name": result.industry_type_name,
             "tier": job_post.tier,
             "description": job_post.description,
             "latitude": point.y if point else None,
@@ -466,8 +530,11 @@ def get_job_details_by_id_service(db: Session, job_id: str) -> dict:
             "status": job_post.status,
             "is_active": job_post.is_active,
             "assigned_worker_id": (
-                str(job_post.assigned_worker_id) if job_post.assigned_worker_id else None
+                str(job_post.assigned_worker_id)
+                if job_post.assigned_worker_id
+                else None
             ),
+            "assigned_worker_name": result.assigned_worker_name,
             "posted_at": job_post.posted_at,
             "assigned_at": job_post.assigned_at,
             "started_at": job_post.started_at,
@@ -484,3 +551,124 @@ def get_job_details_by_id_service(db: Session, job_id: str) -> dict:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error fetching job details",
         )
+
+
+# -----------------------End Get Job Details By ID--------------------- #
+
+
+# ------------------------Get All Nearest Workers List Service----------------------- #
+def get_all_nearest_workers_service(
+    db: Session,
+    job_id: str,
+    limit: int = 50,
+) -> list[dict]:
+    try:
+        try:
+            parsed_job_id = UUID(job_id)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid job_id format. Expected UUID string.",
+            ) from exc
+
+        if limit < 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="limit must be greater than or equal to 1",
+            )
+        if limit > 200:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="limit must be less than or equal to 200",
+            )
+
+        job = (
+            db.query(JobPostingModel)
+            .filter(
+                JobPostingModel.id == parsed_job_id,
+                JobPostingModel.is_active.is_(True),
+            )
+            .first()
+        )
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job post not found",
+            )
+        if not job.sub_category_id:
+            return []
+        if not job.location:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Job location is required to fetch nearest workers",
+            )
+
+        distance_expr = func.ST_Distance(
+            WorkerRegistrationModel.location,
+            job.location,
+        )
+        availability_priority_expr = case(
+            (
+                or_(
+                    WorkerRegistrationModel.is_available.is_(True),
+                    WorkerRegistrationModel.is_online.is_(True),
+                ),
+                1,
+            ),
+            else_=0,
+        )
+        rows = (
+            db.query(
+                WorkerRegistrationModel.id,
+                WorkerRegistrationModel.name,
+                WorkerRegistrationModel.auth_number,
+                WorkerRegistrationModel.is_online,
+                WorkerRegistrationModel.is_available,
+                WorkerSubCategoryModel.sub_category_skill_id,
+                distance_expr.label("distance_meters"),
+            )
+            .join(
+                WorkerSubCategoryModel,
+                WorkerSubCategoryModel.worker_id == WorkerRegistrationModel.id,
+            )
+            .filter(
+                WorkerRegistrationModel.is_active.is_(True),
+                WorkerRegistrationModel.location.isnot(None),
+                WorkerSubCategoryModel.sub_category_skill_id == job.sub_category_id,
+            )
+            .order_by(availability_priority_expr.desc(), distance_expr.asc())
+            .limit(limit)
+            .all()
+        )
+
+        return [
+            {
+                "worker_id": str(row.id),
+                "worker_name": row.name,
+                "phone_number": row.auth_number,
+                "is_online": row.is_online,
+                "is_available": row.is_available,
+                "sub_category_id": (
+                    str(row.sub_category_skill_id)
+                    if row.sub_category_skill_id
+                    else None
+                ),
+                "distance_meters": (
+                    int(row.distance_meters)
+                    if row.distance_meters is not None
+                    else None
+                ),
+            }
+            for row in rows
+        ]
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error fetching nearest worker details")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching nearest worker details",
+        )
+
+
+# ------------------------End Get All Nearest Workers List Service----------------------- #

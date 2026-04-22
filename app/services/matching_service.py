@@ -70,7 +70,7 @@ def find_matching_workers(
                     job.location,
                 )
             )
-            .limit(10)
+            .limit(50)
             .all()
         )
 
