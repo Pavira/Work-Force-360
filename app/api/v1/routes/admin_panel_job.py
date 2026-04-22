@@ -1,0 +1,224 @@
+from fastapi import APIRouter, Depends, Query, Request, status
+from sqlalchemy.orm import Session
+
+from app.core.limiter import limiter
+from app.db.session import get_db
+from app.services.admin_panel_job_service import (
+    get_all_assigned_jobs_service,
+    get_all_cancelled_jobs_service,
+    get_all_completed_jobs_service,
+    get_all_in_progress_jobs_service,
+    get_all_no_worker_match_jobs_service,
+    get_all_searching_jobs_service,
+    get_job_details_by_id_service,
+)
+from app.utils.response import custom_response
+
+
+router = APIRouter()
+
+
+@router.get(
+    "/searching",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_all_searching_jobs(
+    request: Request,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    cursor: str | None = Query(None),
+    search_term: str | None = Query(None),
+    search_type: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    job_details = get_all_searching_jobs_service(
+        db=db,
+        page=page,
+        page_size=page_size,
+        cursor=cursor,
+        search_term=search_term,
+        search_type=search_type,
+    )
+
+    return custom_response(
+        success=True,
+        message="Searching job details and counts fetched successfully",
+        data=job_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+@router.get(
+    "/assigned",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_all_assigned_jobs(
+    request: Request,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    cursor: str | None = Query(None),
+    search_term: str | None = Query(None),
+    search_type: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    job_details = get_all_assigned_jobs_service(
+        db=db,
+        page=page,
+        page_size=page_size,
+        cursor=cursor,
+        search_term=search_term,
+        search_type=search_type,
+    )
+
+    return custom_response(
+        success=True,
+        message="Assigned job details and counts fetched successfully",
+        data=job_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+@router.get(
+    "/in_progress",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_all_in_progress_jobs(
+    request: Request,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    cursor: str | None = Query(None),
+    search_term: str | None = Query(None),
+    search_type: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    job_details = get_all_in_progress_jobs_service(
+        db=db,
+        page=page,
+        page_size=page_size,
+        cursor=cursor,
+        search_term=search_term,
+        search_type=search_type,
+    )
+
+    return custom_response(
+        success=True,
+        message="In progress job details and counts fetched successfully",
+        data=job_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+@router.get(
+    "/completed",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_all_completed_jobs(
+    request: Request,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    cursor: str | None = Query(None),
+    search_term: str | None = Query(None),
+    search_type: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    job_details = get_all_completed_jobs_service(
+        db=db,
+        page=page,
+        page_size=page_size,
+        cursor=cursor,
+        search_term=search_term,
+        search_type=search_type,
+    )
+
+    return custom_response(
+        success=True,
+        message="Completed job details and counts fetched successfully",
+        data=job_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+@router.get(
+    "/cancelled",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_all_cancelled_jobs(
+    request: Request,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    cursor: str | None = Query(None),
+    search_term: str | None = Query(None),
+    search_type: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    job_details = get_all_cancelled_jobs_service(
+        db=db,
+        page=page,
+        page_size=page_size,
+        cursor=cursor,
+        search_term=search_term,
+        search_type=search_type,
+    )
+
+    return custom_response(
+        success=True,
+        message="Cancelled job details and counts fetched successfully",
+        data=job_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+@router.get(
+    "/no_worker_match",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_all_no_worker_match_jobs(
+    request: Request,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    cursor: str | None = Query(None),
+    search_term: str | None = Query(None),
+    search_type: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    job_details = get_all_no_worker_match_jobs_service(
+        db=db,
+        page=page,
+        page_size=page_size,
+        cursor=cursor,
+        search_term=search_term,
+        search_type=search_type,
+    )
+
+    return custom_response(
+        success=True,
+        message="No worker match job details and counts fetched successfully",
+        data=job_details,
+        code=status.HTTP_200_OK,
+    )
+
+
+@router.get(
+    "/{job_id}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("10/minute")
+def get_job_details_by_id(
+    request: Request,
+    job_id: str,
+    db: Session = Depends(get_db),
+):
+    job = get_job_details_by_id_service(db=db, job_id=job_id)
+
+    return custom_response(
+        success=True,
+        message="Job details fetched successfully",
+        data=job,
+        code=status.HTTP_200_OK,
+    )

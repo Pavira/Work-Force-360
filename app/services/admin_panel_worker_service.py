@@ -80,6 +80,9 @@ def _get_status_counts(db: Session) -> dict:
         "approved_count": status_count_map.get("approved", 0),
         "unapproved_count": status_count_map.get("unapproved", 0),
         "draft_count": status_count_map.get("draft", 0),
+        "total_count": status_count_map.get("approved", 0)
+        + status_count_map.get("unapproved", 0)
+        + status_count_map.get("draft", 0),
     }
 
 
@@ -181,7 +184,9 @@ def _get_workers_by_status_service(
         search_type=search_type,
     )
 
-    total_count_query = _build_worker_total_count_query(db=db, target_status=target_status)
+    total_count_query = _build_worker_total_count_query(
+        db=db, target_status=target_status
+    )
     total_count_query = _apply_search_filters_to_count_query(
         query=total_count_query,
         search_term=search_term,
@@ -199,7 +204,7 @@ def _get_workers_by_status_service(
 
     return {
         "items": items,
-        "total_count": total_count,
+        # "total_count": total_count,
         "page": resolved_page,
         "page_size": page_size,
         "next_cursor": next_cursor,
@@ -315,7 +320,10 @@ def get_worker_details_by_id_service(db: Session, worker_id: str):
                 selectinload(WorkerRegistrationModel.documents),
                 selectinload(WorkerRegistrationModel.bank_details),
             )
-            .filter(WorkerRegistrationModel.id == worker_id, WorkerRegistrationModel.is_active.is_(True))
+            .filter(
+                WorkerRegistrationModel.id == worker_id,
+                WorkerRegistrationModel.is_active.is_(True),
+            )
             .first()
         )
 
