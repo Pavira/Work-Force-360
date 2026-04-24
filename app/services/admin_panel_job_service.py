@@ -653,8 +653,8 @@ def get_all_nearest_workers_service(
                     if row.sub_category_skill_id
                     else None
                 ),
-                "distance_meters": (
-                    int(row.distance_meters)
+                "distance_in_km": (
+                    round(row.distance_meters / 1000, 2)
                     if row.distance_meters is not None
                     else None
                 ),

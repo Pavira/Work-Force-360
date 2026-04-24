@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.limiter import limiter
 from app.db.session import get_db
 from app.services.admin_panel_job_service import (
+    assign_job_to_worker_service,
     get_all_assigned_jobs_service,
     get_all_cancelled_jobs_service,
     get_all_completed_jobs_service,
@@ -246,5 +247,30 @@ def get_all_nearest_workers(
         success=True,
         message="Nearest workers fetched successfully",
         data=workers,
+        code=status.HTTP_200_OK,
+    )
+
+
+# ------------------------Assign Job to Worker Service----------------------- #
+@router.post(
+    "/{job_id}/assign/{worker_id}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("5/minute")
+def assign_job_to_worker(
+    request: Request,
+    job_id: str,
+    worker_id: str,
+    db: Session = Depends(get_db),
+):
+    assign_job_to_worker_service(
+        db=db,
+        job_id=job_id,
+        worker_id=worker_id,
+    )
+
+    return custom_response(
+        success=True,
+        message="Job assigned to worker successfully",
         code=status.HTTP_200_OK,
     )
