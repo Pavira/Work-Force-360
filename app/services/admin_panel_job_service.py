@@ -672,3 +672,60 @@ def get_all_nearest_workers_service(
 
 
 # ------------------------End Get All Nearest Workers List Service----------------------- #
+
+
+# ------------------------Assign Job to Worker Service----------------------- #
+def assign_job_to_worker_service(db: Session, job_id: str, worker_id: str) -> None:
+    try:
+        parsed_job_id = UUID(job_id)
+        parsed_worker_id = UUID(worker_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid job_id or worker_id format. Expected UUID string.",
+        ) from exc
+
+    job = (
+        db.query(JobPostingModel)
+        .filter(
+            JobPostingModel.id == parsed_job_id,
+            JobPostingModel.is_active.is_(True),
+        )
+        .first()
+    )
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job post not found",
+        )
+    if job.assigned_worker_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Job is already assigned to a worker",
+        )
+
+    worker = (
+        db.query(WorkerRegistrationModel)
+        .filter(
+            WorkerRegistrationModel.id == parsed_worker_id,
+            WorkerRegistrationModel.is_active.is_(True),
+            WorkerRegistrationModel.is_available.is_(True),
+        )
+        .first()
+    )
+    if not worker:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Worker not found",
+        )
+
+    job.assigned_worker_id = parsed_worker_id
+    job.status = "assigned"
+    job.assigned_at = func.now()
+
+    worker.is_available = False
+    db.commit()
+    return
+
+
+# ------------------------End Assign Job to Worker Service----------------------- #
