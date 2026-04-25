@@ -589,9 +589,8 @@ def fetch_worker_terms_and_conditions(
 
 # -----------------------End Fetch Worker Terms and Conditions----------------------- #
 
+
 # -----------------------Generate S3 Upload URL----------------------- #
-
-
 @router.put("/documents/upload-url")
 @limiter.limit("30/minute")
 def generate_upload_url(

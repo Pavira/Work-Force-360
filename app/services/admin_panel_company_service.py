@@ -85,6 +85,9 @@ def _get_status_counts(db: Session) -> dict:
         "approved_count": status_count_map.get("approved", 0),
         "unapproved_count": status_count_map.get("unapproved", 0),
         "draft_count": status_count_map.get("draft", 0),
+        "total_count": status_count_map.get("approved", 0)
+        + status_count_map.get("unapproved", 0)
+        + status_count_map.get("draft", 0),
     }
 
 
@@ -93,7 +96,9 @@ def _paginate_company_query(query, page: int, page_size: int, cursor: str | None
     parsed_cursor = _safe_parse_cursor(cursor)
 
     if parsed_cursor is not None:
-        rows = ordered_query.filter(CompanyModel.id > parsed_cursor).limit(page_size).all()
+        rows = (
+            ordered_query.filter(CompanyModel.id > parsed_cursor).limit(page_size).all()
+        )
         next_cursor = str(rows[-1].id) if len(rows) == page_size else None
         prev_cursor = str(rows[0].id) if rows else None
         # Cursor mode is forward-only; page number is not meaningful.
@@ -185,7 +190,9 @@ def _get_companies_by_status_service(
         search_type=search_type,
     )
 
-    total_count_query = _build_company_total_count_query(db=db, target_status=target_status)
+    total_count_query = _build_company_total_count_query(
+        db=db, target_status=target_status
+    )
     total_count_query = _apply_search_filters_to_count_query(
         query=total_count_query,
         search_term=search_term,
@@ -460,4 +467,3 @@ def update_company_status_to_unapproved_service(company_id: UUID, db: Session):
 
 
 #  -----------------------End Update Company Status to UnApproved Service----------------------- #
-
