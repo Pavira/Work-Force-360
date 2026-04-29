@@ -75,7 +75,7 @@ def get_current_user(authorization: str = Header(...)):
     return verify_firebase_token(token)
 
 
-# ----------------------------------Firestore Production Initialization----------------------------------
+# ----------------------------------Firestore Production Initialization for Admin Panel----------------------------------
 # Production function for Vercel.
 # Set env var: FIREBASE_ADMINSDK_JSON with the full Firebase service account JSON.
 def get_firestore():

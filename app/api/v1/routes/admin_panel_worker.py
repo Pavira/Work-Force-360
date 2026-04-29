@@ -1,8 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.firebase_auth import initialize_firebase
 from app.core.limiter import limiter
 from app.db.session import get_db
 from app.services.admin_panel_worker_service import (
@@ -14,7 +16,7 @@ from app.services.admin_panel_worker_service import (
     update_worker_status_to_unapproved_service,
 )
 from app.utils.response import custom_response
-
+from firebase_admin import auth
 
 router = APIRouter()
 
@@ -222,3 +224,43 @@ def unapprove_worker(
 
 
 # -----------------------End Update Worker Status to Unapproved----------------------- #
+
+
+# -----------------------Create Worker Firebase User----------------------- #
+class CreateWorkerFirebaseUserRequest(BaseModel):
+    phone_number: str
+
+
+@router.post(
+    "/create-worker-firebase-user",
+    status_code=status.HTTP_201_CREATED,
+)
+@limiter.limit("30/minute")
+def create_worker_firebase_user(
+    request: Request,
+    body: CreateWorkerFirebaseUserRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Create a Firebase user with phone number for worker authentication.
+    """
+    try:
+        initialize_firebase()
+        user = auth.create_user(phone_number=body.phone_number)
+        return custom_response(
+            success=True,
+            message="Firebase user created successfully",
+            data={
+                "firebase_uid": user.uid,
+                "phone_number": user.phone_number,
+            },
+            code=status.HTTP_201_CREATED,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create Firebase user: {str(e)}",
+        )
+
+
+# -----------------------End Create Worker Firebase User----------------------- #
