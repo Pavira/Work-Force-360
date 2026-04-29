@@ -305,6 +305,7 @@ def generate_upload_url(
 def create_new_worker(
     request: Request,
     body: WorkerRegistrationSchema,
+    firebase_uid: str,
     db: Session = Depends(get_db),
 ):
     """
@@ -313,7 +314,7 @@ def create_new_worker(
     worker_db = create_worker_service(
         db=db,
         worker=body,
-        firebase_uid=body.firebase_uid,
+        firebase_uid=firebase_uid,
     )
 
     return custom_response(
