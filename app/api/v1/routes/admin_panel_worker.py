@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.firebase_auth import initialize_firebase
 from app.core.limiter import limiter
 from app.db.session import get_db
+from app.schemas.worker_schema import WorkerRegistrationSchema
 from app.services.admin_panel_worker_service import (
     get_all_approved_workers_service,
     get_all_draft_workers_service,
@@ -17,6 +18,7 @@ from app.services.admin_panel_worker_service import (
 )
 from app.utils.response import custom_response
 from firebase_admin import auth
+from app.services.worker_service import create_worker_service
 
 router = APIRouter()
 
@@ -264,3 +266,33 @@ def create_worker_firebase_user(
 
 
 # -----------------------End Create Worker Firebase User----------------------- #
+
+
+# -----------------------Create New Worker----------------------- #
+@router.post(
+    "/create_new_worker",
+    status_code=status.HTTP_201_CREATED,
+)
+@limiter.limit("30/minute")
+def create_new_worker(
+    request: Request,
+    body: WorkerRegistrationSchema,
+    db: Session = Depends(get_db),
+):
+    """
+    Create a new worker with all details.
+    """
+    worker_db = create_worker_service(
+        db=db,
+        worker=body,
+        firebase_uid=body.firebase_uid,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker created successfully",
+        data={
+            "id": worker_db.id,
+        },
+        code=status.HTTP_201_CREATED,
+    )
