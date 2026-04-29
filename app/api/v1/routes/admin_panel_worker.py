@@ -321,7 +321,7 @@ def create_new_worker(
         success=True,
         message="Worker created successfully",
         data={
-            "id": worker_db.id,
+            # "id": worker_db.id,
         },
         code=status.HTTP_201_CREATED,
     )
