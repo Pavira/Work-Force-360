@@ -253,6 +253,7 @@ def create_worker_firebase_user(
 ):
     """
     Create a Firebase user with phone number for worker authentication.
+    Handles duplicate phone numbers.
     """
     try:
         initialize_firebase()
@@ -266,10 +267,37 @@ def create_worker_firebase_user(
             },
             code=status.HTTP_201_CREATED,
         )
+    # ✅ HANDLE DUPLICATE NUMBER
+    except auth.PhoneNumberAlreadyExistsError:
+        user = auth.get_user_by_phone_number(body.phone_number)
+        return custom_response(
+            success=True,
+            message="Firebase user already exists with this phone number",
+            data={
+                "firebase_uid": user.uid,
+                "phone_number": user.phone_number,
+            },
+            code=status.HTTP_200_OK,
+        )
+    # ✅ OPTIONAL: Handle invalid phone format
+    except auth.InvalidPhoneNumberError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid phone number format",
+        )
+
+    # ✅ OPTIONAL: Handle other Firebase errors cleanly
+    except auth.FirebaseError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Firebase error: {str(e)}",
+        )
+
+    # ✅ FALLBACK
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create Firebase user: {str(e)}",
+            detail="Failed to create Firebase user",
         )
 
 
