@@ -7,7 +7,14 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.company_models import CompanyModel
+from app.models.company_models import (
+    CompanyAddressModel,
+    CompanyBankDetailsModel,
+    CompanyDocumentModel,
+)
 from app.models.industry_skill_models import IndustryTypeModel
+from app.schemas.company_schema import AdminCompanyProfileDetailsSchema
+from app.services.worker_service import _build_location
 
 VALID_SEARCH_TYPES = {"company_name", "phone", "email"}
 logger = logging.getLogger(__name__)
@@ -313,6 +320,239 @@ def get_all_draft_companies_service(
 
 
 # -----------------------End Get All Draft Company details Service----------------------- #
+
+
+# -----------------------Admin Create Company Service----------------------- #
+def admin_create_company_service(
+    company: AdminCompanyProfileDetailsSchema,
+    db: Session,
+    firebase_uid: str,
+) -> dict:
+    try:
+        existing = (
+            db.query(CompanyModel)
+            .filter(CompanyModel.firebase_uid == firebase_uid)
+            .first()
+        )
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Company already registered",
+            )
+
+        duplicate_auth_phone = (
+            db.query(CompanyModel)
+            .filter(
+                CompanyModel.auth_phone == company.authPhone,
+                CompanyModel.is_active.is_(True),
+            )
+            .first()
+        )
+        if duplicate_auth_phone:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Auth phone already in use by another company",
+            )
+
+        if company.contactEmail:
+            duplicate_contact_email = (
+                db.query(CompanyModel)
+                .filter(
+                    CompanyModel.contact_email == company.contactEmail,
+                    CompanyModel.is_active.is_(True),
+                )
+                .first()
+            )
+            if duplicate_contact_email:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Contact email already in use by another company",
+                )
+
+        company_db = CompanyModel(
+            firebase_uid=firebase_uid,
+            company_name=company.companyName,
+            industry_id=company.industryId,
+            gst_number=company.gstNo,
+            auth_phone=company.authPhone,
+            contact_person_name=company.contactPersonName,
+            contact_country_code=company.contactCountryCode,
+            contact_phone=company.contactPersonPhone,
+            contact_email=company.contactEmail,
+            logo_url=company.documentInfo.logoUrl if company.documentInfo else None,
+        )
+        db.add(company_db)
+        db.flush()
+
+        for addr in company.addresses:
+            db.add(
+                CompanyAddressModel(
+                    company_id=company_db.id,
+                    address=addr.address,
+                    unit_name=addr.unitName,
+                    city=addr.city,
+                    state=addr.state,
+                    pincode=addr.pincode,
+                    location=_build_location(addr.latitude, addr.longitude),
+                )
+            )
+
+        if company.documentInfo and company.documentInfo.documents:
+            for doc in company.documentInfo.documents:
+                db.add(
+                    CompanyDocumentModel(
+                        company_id=company_db.id,
+                        document_type=doc.documentType,
+                        document_url=doc.documentUrl,
+                    )
+                )
+
+        if company.bankDetails:
+            db.add(
+                CompanyBankDetailsModel(
+                    company_id=company_db.id,
+                    bank_name=company.bankDetails.bankName,
+                    account_holder_name=company.bankDetails.accountHolderName,
+                    account_number=company.bankDetails.accountNumber,
+                    ifsc_code=company.bankDetails.ifscCode,
+                    upi_id=company.bankDetails.upiId,
+                )
+            )
+
+        db.flush()
+        return {"id": str(company_db.id), "company_name": company_db.company_name}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error creating company by admin")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error creating company details",
+        )
+
+
+# -----------------------End Admin Create Company Service----------------------- #
+
+
+# -----------------------Admin Update Company Service----------------------- #
+def admin_update_company_service(
+    company_id: str,
+    company: AdminCompanyProfileDetailsSchema,
+    db: Session,
+) -> CompanyModel:
+    try:
+        company_db = (
+            db.query(CompanyModel)
+            .filter(
+                CompanyModel.id == company_id,
+                CompanyModel.is_active.is_(True),
+            )
+            .first()
+        )
+        if not company_db:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company not found",
+            )
+
+        duplicate_auth_phone = (
+            db.query(CompanyModel)
+            .filter(
+                CompanyModel.auth_phone == company.authPhone,
+                CompanyModel.id != company_db.id,
+                CompanyModel.is_active.is_(True),
+            )
+            .first()
+        )
+        if duplicate_auth_phone:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Auth phone already in use by another company",
+            )
+
+        if company.contactEmail:
+            duplicate_contact_email = (
+                db.query(CompanyModel)
+                .filter(
+                    CompanyModel.contact_email == company.contactEmail,
+                    CompanyModel.id != company_db.id,
+                    CompanyModel.is_active.is_(True),
+                )
+                .first()
+            )
+            if duplicate_contact_email:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Contact email already in use by another company",
+                )
+
+        company_db.company_name = company.companyName
+        company_db.industry_id = company.industryId
+        company_db.gst_number = company.gstNo
+        company_db.auth_phone = company.authPhone
+        company_db.contact_person_name = company.contactPersonName
+        company_db.contact_country_code = company.contactCountryCode
+        company_db.contact_phone = company.contactPersonPhone
+        company_db.contact_email = company.contactEmail
+        company_db.logo_url = company.documentInfo.logoUrl if company.documentInfo else None
+
+        db.query(CompanyAddressModel).filter(
+            CompanyAddressModel.company_id == company_db.id
+        ).delete(synchronize_session=False)
+        for addr in company.addresses:
+            db.add(
+                CompanyAddressModel(
+                    company_id=company_db.id,
+                    address=addr.address,
+                    unit_name=addr.unitName,
+                    city=addr.city,
+                    state=addr.state,
+                    pincode=addr.pincode,
+                    location=_build_location(addr.latitude, addr.longitude),
+                )
+            )
+
+        db.query(CompanyDocumentModel).filter(
+            CompanyDocumentModel.company_id == company_db.id
+        ).delete(synchronize_session=False)
+        if company.documentInfo and company.documentInfo.documents:
+            for doc in company.documentInfo.documents:
+                db.add(
+                    CompanyDocumentModel(
+                        company_id=company_db.id,
+                        document_type=doc.documentType,
+                        document_url=doc.documentUrl,
+                    )
+                )
+
+        db.query(CompanyBankDetailsModel).filter(
+            CompanyBankDetailsModel.company_id == company_db.id
+        ).delete(synchronize_session=False)
+        if company.bankDetails:
+            db.add(
+                CompanyBankDetailsModel(
+                    company_id=company_db.id,
+                    bank_name=company.bankDetails.bankName,
+                    account_holder_name=company.bankDetails.accountHolderName,
+                    account_number=company.bankDetails.accountNumber,
+                    ifsc_code=company.bankDetails.ifscCode,
+                    upi_id=company.bankDetails.upiId,
+                )
+            )
+
+        db.flush()
+        return company_db
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error updating company profile by admin")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating company details",
+        )
+
+
+# -----------------------End Admin Update Company Service----------------------- #
 
 
 # -----------------------Get Company Details by ID Service----------------------- #

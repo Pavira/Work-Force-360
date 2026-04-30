@@ -70,3 +70,13 @@ class CompanyBankDetailsSchema(BaseModel):
 
 class LogoUpdateSchema(BaseModel):
     logo_url: str | None = None
+
+
+class AdminCompanyProfileDetailsSchema(BaseModel):
+    companyName: str
+    industryId: UUID
+    gstNo: Optional[str] = None
+    addresses: List[CompanyAddressCreateSchema]
+    contactInfo: ContactInfoSchema
+    documentInfo: DocumentInfoSchema
+    bankDetails: CompanyBankDetailsSchema
