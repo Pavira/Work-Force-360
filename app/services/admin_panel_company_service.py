@@ -354,11 +354,11 @@ def admin_create_company_service(
                 detail="Auth phone already in use by another company",
             )
 
-        if company.contactEmail:
+        if company.contactInfo and company.contactInfo.contactEmail:
             duplicate_contact_email = (
                 db.query(CompanyModel)
                 .filter(
-                    CompanyModel.contact_email == company.contactEmail,
+                    CompanyModel.contact_email == company.contactInfo.contactEmail,
                     CompanyModel.is_active.is_(True),
                 )
                 .first()
@@ -375,10 +375,18 @@ def admin_create_company_service(
             industry_id=company.industryId,
             gst_number=company.gstNo,
             auth_phone=company.authPhone,
-            contact_person_name=company.contactPersonName,
-            contact_country_code=company.contactCountryCode,
-            contact_phone=company.contactPersonPhone,
-            contact_email=company.contactEmail,
+            contact_person_name=(
+                company.contactInfo.contactPersonName if company.contactInfo else None
+            ),
+            contact_country_code=(
+                company.contactInfo.contactCountryCode if company.contactInfo else None
+            ),
+            contact_phone=(
+                company.contactInfo.contactPersonPhone if company.contactInfo else None
+            ),
+            contact_email=(
+                company.contactInfo.contactEmail if company.contactInfo else None
+            ),
             logo_url=company.documentInfo.logoUrl if company.documentInfo else None,
         )
         db.add(company_db)
@@ -470,11 +478,11 @@ def admin_update_company_service(
                 detail="Auth phone already in use by another company",
             )
 
-        if company.contactEmail:
+        if company.contactInfo and company.contactInfo.contactEmail:
             duplicate_contact_email = (
                 db.query(CompanyModel)
                 .filter(
-                    CompanyModel.contact_email == company.contactEmail,
+                    CompanyModel.contact_email == company.contactInfo.contactEmail,
                     CompanyModel.id != company_db.id,
                     CompanyModel.is_active.is_(True),
                 )
@@ -490,10 +498,18 @@ def admin_update_company_service(
         company_db.industry_id = company.industryId
         company_db.gst_number = company.gstNo
         company_db.auth_phone = company.authPhone
-        company_db.contact_person_name = company.contactPersonName
-        company_db.contact_country_code = company.contactCountryCode
-        company_db.contact_phone = company.contactPersonPhone
-        company_db.contact_email = company.contactEmail
+        company_db.contact_person_name = (
+            company.contactInfo.contactPersonName if company.contactInfo else None
+        )
+        company_db.contact_country_code = (
+            company.contactInfo.contactCountryCode if company.contactInfo else None
+        )
+        company_db.contact_phone = (
+            company.contactInfo.contactPersonPhone if company.contactInfo else None
+        )
+        company_db.contact_email = (
+            company.contactInfo.contactEmail if company.contactInfo else None
+        )
         company_db.logo_url = (
             company.documentInfo.logoUrl if company.documentInfo else None
         )

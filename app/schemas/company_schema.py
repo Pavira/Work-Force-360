@@ -78,9 +78,6 @@ class AdminCompanyProfileDetailsSchema(BaseModel):
     industryId: UUID
     gstNo: Optional[str] = None
     addresses: List[CompanyAddressCreateSchema]
-    contactPersonName: Optional[str] = None
-    contactCountryCode: Optional[str] = None
-    contactPersonPhone: Optional[str] = None
-    contactEmail: Optional[str] = None
+    contactInfo: ContactInfoSchema
     documentInfo: DocumentInfoSchema
     bankDetails: CompanyBankDetailsSchema
