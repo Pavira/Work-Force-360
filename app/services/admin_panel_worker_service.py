@@ -15,8 +15,7 @@ from app.models.worker_models import (
     WorkerSkillCategoryModel,
     WorkerSubCategoryModel,
 )
-from app.schemas.worker_schema import WorkerRegistrationSchema
-from app.schemas.worker_schema import WorkerRegistrationSchema
+from app.schemas.worker_schema import AdminWorkerRegistrationSchema
 from app.services.worker_service import _build_location
 
 VALID_SEARCH_TYPES = {"name", "phone"}
@@ -319,13 +318,14 @@ def get_all_draft_workers_service(
 # -----------------------End Get All Draft Worker details Service----------------------- #
 
 
+# -----------------------Worker Registration Service----------------------- #
 def admin_create_worker_service(
-    worker: WorkerRegistrationSchema,
+    worker: AdminWorkerRegistrationSchema,
     db: Session,
     firebase_uid: str,
 ) -> dict:
     """
-    Service function to create a new worker registration entry.
+    Service function to create a new admin worker registration entry.
     """
     try:
         # Prevent duplicate registration
@@ -438,6 +438,207 @@ def admin_create_worker_service(
 
 
 # -----------------------END Worker Registration Service -----------------------
+
+
+# -----------------------Update Worker Status to UnApproved Service----------------------- #
+def update_worker_status_to_unapproved_service(worker_id: UUID, db: Session):
+    try:
+        worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.id == worker_id)
+            .first()
+        )
+
+        if not worker:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker profile not found",
+            )
+
+        worker.status = "unapproved"
+        worker.status_approval_message_shown = False
+        db.flush()
+        return worker
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("DB ERROR =>", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating worker status to unapproved",
+        )
+
+
+# -----------------------End Update Worker Status to UnApproved Service----------------------- #
+
+
+# -----------------------Admin Update Worker Profile Service----------------------- #
+def admin_update_worker_service(
+    worker_id: str,
+    worker: AdminWorkerRegistrationSchema,
+    db: Session,
+) -> dict:
+    """
+    Admin service to update a worker profile and its related entities.
+    Replaces skills, documents, and bank details based on incoming payload.
+    """
+    try:
+        worker_db = (
+            db.query(WorkerRegistrationModel)
+            .filter(
+                WorkerRegistrationModel.id == worker_id,
+                WorkerRegistrationModel.is_active.is_(True),
+            )
+            .first()
+        )
+
+        if not worker_db:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Worker not found",
+            )
+
+        duplicate_number_worker = (
+            db.query(WorkerRegistrationModel)
+            .filter(
+                WorkerRegistrationModel.auth_number == worker.authNumber,
+                WorkerRegistrationModel.id != worker_db.id,
+                WorkerRegistrationModel.is_active.is_(True),
+            )
+            .first()
+        )
+        if duplicate_number_worker:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Auth number already in use by another worker",
+            )
+
+        category_ids = [category.categoryId for category in worker.categories]
+        if len(category_ids) != len(set(category_ids)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Duplicate category ids are not allowed",
+            )
+
+        if category_ids:
+            valid_categories = (
+                db.query(CategorySkillModel.id)
+                .filter(CategorySkillModel.id.in_(category_ids))
+                .all()
+            )
+            valid_category_ids = {str(row[0]) for row in valid_categories}
+
+            for category_id in category_ids:
+                if category_id not in valid_category_ids:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Invalid category id provided",
+                    )
+
+        worker_db.name = worker.name
+        worker_db.country_code = worker.countryCode
+        worker_db.auth_number = worker.authNumber
+        worker_db.address = worker.address
+        worker_db.city = worker.city
+        worker_db.state = worker.state
+        worker_db.pincode = worker.pincode
+        worker_db.location = _build_location(worker.latitude, worker.longitude)
+        worker_db.logo_url = (
+            worker.documentInfo.logoUrl if worker.documentInfo else None
+        )
+
+        db.query(WorkerSubCategoryModel).filter(
+            WorkerSubCategoryModel.worker_id == worker_db.id
+        ).delete(synchronize_session=False)
+        db.query(WorkerSkillCategoryModel).filter(
+            WorkerSkillCategoryModel.worker_id == worker_db.id
+        ).delete(synchronize_session=False)
+
+        for category in worker.categories:
+            db.add(
+                WorkerSkillCategoryModel(
+                    worker_id=worker_db.id,
+                    category_skill_id=category.categoryId,
+                    experience_years=category.experienceYears,
+                )
+            )
+
+            if not category.subCategoryIds:
+                continue
+
+            if len(category.subCategoryIds) != len(set(category.subCategoryIds)):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Duplicate subcategory ids are not allowed",
+                )
+
+            valid_sub_categories = (
+                db.query(SubCategorySkillModel.id)
+                .filter(
+                    SubCategorySkillModel.id.in_(category.subCategoryIds),
+                    SubCategorySkillModel.category_skill_id == category.categoryId,
+                )
+                .all()
+            )
+            valid_sub_ids = {str(row[0]) for row in valid_sub_categories}
+
+            for sub_category_id in category.subCategoryIds:
+                if sub_category_id not in valid_sub_ids:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Invalid subcategory for selected category",
+                    )
+
+                db.add(
+                    WorkerSubCategoryModel(
+                        worker_id=worker_db.id,
+                        sub_category_skill_id=sub_category_id,
+                    )
+                )
+
+        db.query(WorkerDocumentModel).filter(
+            WorkerDocumentModel.worker_id == worker_db.id
+        ).delete(synchronize_session=False)
+        if worker.documentInfo and worker.documentInfo.documents:
+            for doc in worker.documentInfo.documents:
+                db.add(
+                    WorkerDocumentModel(
+                        worker_id=worker_db.id,
+                        document_type=doc.documentType,
+                        document_url=doc.documentUrl,
+                    )
+                )
+
+        db.query(WorkerBankDetailsModel).filter(
+            WorkerBankDetailsModel.worker_id == worker_db.id
+        ).delete(synchronize_session=False)
+        if worker.bankDetails:
+            db.add(
+                WorkerBankDetailsModel(
+                    worker_id=worker_db.id,
+                    bank_name=worker.bankDetails.bankName,
+                    account_holder_name=worker.bankDetails.accountHolderName,
+                    account_number=worker.bankDetails.accountNumber,
+                    ifsc_code=worker.bankDetails.ifscCode,
+                    upi_id=worker.bankDetails.upiId,
+                )
+            )
+
+        db.flush()
+        return worker_db
+
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error updating worker profile by admin")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating worker details",
+        )
+
+
+# -----------------------End Admin Update Worker Profile Service----------------------- #
 
 
 # -----------------------Get Worker Details by ID Service----------------------- #
@@ -605,36 +806,3 @@ def update_worker_status_to_approved_service(worker_id: UUID, db: Session):
 
 
 # -----------------------End Update Worker Status to Approved Service----------------------- #
-
-
-# -----------------------Update Worker Status to UnApproved Service----------------------- #
-def update_worker_status_to_unapproved_service(worker_id: UUID, db: Session):
-    try:
-        worker = (
-            db.query(WorkerRegistrationModel)
-            .filter(WorkerRegistrationModel.id == worker_id)
-            .first()
-        )
-
-        if not worker:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Worker profile not found",
-            )
-
-        worker.status = "unapproved"
-        worker.status_approval_message_shown = False
-        db.flush()
-        return worker
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        print("DB ERROR =>", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error updating worker status to unapproved",
-        )
-
-
-# -----------------------End Update Worker Status to UnApproved Service----------------------- #

@@ -8,7 +8,10 @@ from app.core.firebase_auth import initialize_firebase
 from app.core.limiter import limiter
 from app.db.session import get_db
 from app.schemas.company_schema import UploadUrlRequest
-from app.schemas.worker_schema import WorkerRegistrationSchema
+from app.schemas.worker_schema import (
+    AdminWorkerRegistrationSchema,
+    WorkerRegistrationSchema,
+)
 from app.services.admin_panel_worker_service import (
     get_all_approved_workers_service,
     get_all_draft_workers_service,
@@ -17,6 +20,7 @@ from app.services.admin_panel_worker_service import (
     update_worker_status_to_approved_service,
     update_worker_status_to_unapproved_service,
     admin_create_worker_service,
+    admin_update_worker_service,
 )
 from app.utils.response import custom_response
 from firebase_admin import auth
@@ -304,7 +308,7 @@ def generate_upload_url(
 @limiter.limit("30/minute")
 def create_new_worker(
     request: Request,
-    body: WorkerRegistrationSchema,
+    body: AdminWorkerRegistrationSchema,
     firebase_uid: str,
     db: Session = Depends(get_db),
 ):
@@ -324,4 +328,38 @@ def create_new_worker(
             # "id": worker_db.id,
         },
         code=status.HTTP_201_CREATED,
+    )
+
+
+# -----------------------End Create New Worker----------------------- #
+
+
+# -----------------------Admin Update Worker Details----------------------- #
+@router.put(
+    "/{worker_id}",
+    status_code=status.HTTP_200_OK,
+)
+@limiter.limit("30/minute")
+def admin_update_worker(
+    request: Request,
+    worker_id: str,
+    body: AdminWorkerRegistrationSchema,
+    db: Session = Depends(get_db),
+):
+    """
+    Admin can update worker details.
+    """
+    worker_db = admin_update_worker_service(
+        db=db,
+        worker_id=worker_id,
+        worker=body,
+    )
+
+    return custom_response(
+        success=True,
+        message="Worker details updated successfully",
+        data={
+            # "id": worker_db.id,
+        },
+        code=status.HTTP_200_OK,
     )
