@@ -335,7 +335,7 @@ def create_new_worker(
 
 
 # -----------------------Admin Update Worker Details----------------------- #
-@router.put(
+@router.patch(
     "/{worker_id}",
     status_code=status.HTTP_200_OK,
 )
