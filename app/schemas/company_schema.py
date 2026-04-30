@@ -74,6 +74,7 @@ class LogoUpdateSchema(BaseModel):
 
 class AdminCompanyProfileDetailsSchema(BaseModel):
     companyName: str
+    authPhone: str
     industryId: UUID
     gstNo: Optional[str] = None
     addresses: List[CompanyAddressCreateSchema]

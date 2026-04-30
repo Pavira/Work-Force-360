@@ -494,7 +494,9 @@ def admin_update_company_service(
         company_db.contact_country_code = company.contactCountryCode
         company_db.contact_phone = company.contactPersonPhone
         company_db.contact_email = company.contactEmail
-        company_db.logo_url = company.documentInfo.logoUrl if company.documentInfo else None
+        company_db.logo_url = (
+            company.documentInfo.logoUrl if company.documentInfo else None
+        )
 
         db.query(CompanyAddressModel).filter(
             CompanyAddressModel.company_id == company_db.id
