@@ -91,3 +91,28 @@ class WorkerSkillsUpdateSchema(BaseModel):
 class WorkerFcmTokenUpdateSchema(BaseModel):
     worker_id: UUID = Field(..., example="123e4567-e89b-12d3-a456-426614174000")
     fcm_token: str = Field(..., min_length=1, example="fcm_registration_token")
+
+
+class AdminWorkerRegistrationSchema(BaseModel):
+
+    # -------- Personal Info --------
+    name: str = Field(..., example="Sangeetha S")
+    countryCode: Optional[str] = Field(None, example="+91")
+    authNumber: Optional[str] = Field(None, example="9876543210")
+
+    # -------- Skills ---------
+    categories: List[CategorySelectionSchema] = Field(default_factory=list)
+
+    # -------- Location ---------
+    address: Optional[str] = Field(None, example="123, Anna Nagar, Chennai")
+    city: Optional[str] = Field(None, example="Chennai")
+    state: Optional[str] = Field(None, example="Tamil Nadu")
+    pincode: Optional[str] = Field(None, example="600040")
+    latitude: Optional[float] = Field(None, example=13.0827)
+    longitude: Optional[float] = Field(None, example=80.2707)
+
+    # --------- Documents ---------
+    documentInfo: Optional[WorkerDocumentInfoSchema] = None
+
+    # --------- Bank Details ---------
+    bankDetails: Optional[WorkerBankDetailsSchema] = None
