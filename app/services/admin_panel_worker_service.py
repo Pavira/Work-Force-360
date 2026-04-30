@@ -1,4 +1,5 @@
 import logging
+import traceback
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -7,7 +8,16 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.industry_skill_models import CategorySkillModel, SubCategorySkillModel
-from app.models.worker_models import WorkerRegistrationModel
+from app.models.worker_models import (
+    WorkerBankDetailsModel,
+    WorkerDocumentModel,
+    WorkerRegistrationModel,
+    WorkerSkillCategoryModel,
+    WorkerSubCategoryModel,
+)
+from app.schemas.worker_schema import WorkerRegistrationSchema
+from app.schemas.worker_schema import WorkerRegistrationSchema
+from app.services.worker_service import _build_location
 
 VALID_SEARCH_TYPES = {"name", "phone"}
 logger = logging.getLogger(__name__)
@@ -307,6 +317,127 @@ def get_all_draft_workers_service(
 
 
 # -----------------------End Get All Draft Worker details Service----------------------- #
+
+
+def admin_create_worker_service(
+    worker: WorkerRegistrationSchema,
+    db: Session,
+    firebase_uid: str,
+) -> dict:
+    """
+    Service function to create a new worker registration entry.
+    """
+    try:
+        # Prevent duplicate registration
+        existing = (
+            db.query(WorkerRegistrationModel)
+            .filter(WorkerRegistrationModel.firebase_uid == firebase_uid)
+            .first()
+        )
+
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Worker already registered",
+            )
+
+        reg = WorkerRegistrationModel(
+            firebase_uid=firebase_uid,
+            name=worker.name,
+            country_code=worker.countryCode,
+            auth_number=worker.authNumber,
+            address=worker.address,
+            city=worker.city,
+            state=worker.state,
+            pincode=worker.pincode,
+            location=_build_location(worker.latitude, worker.longitude),
+            logo_url=(worker.documentInfo.logoUrl if worker.documentInfo else None),
+        )
+        db.add(reg)
+        db.flush()
+
+        # ----------------------------
+        # Handle Skills (Professional)
+        # ----------------------------
+        for category in worker.categories:
+
+            # Insert category with experience
+            worker_category = WorkerSkillCategoryModel(
+                worker_id=reg.id,
+                category_skill_id=category.categoryId,
+                experience_years=category.experienceYears,
+            )
+
+            db.add(worker_category)
+            # Validate subcategories belong to this category
+            if category.subCategoryIds:
+
+                valid_subs = (
+                    db.query(SubCategorySkillModel.id)
+                    .filter(
+                        SubCategorySkillModel.id.in_(category.subCategoryIds),
+                        SubCategorySkillModel.category_skill_id == category.categoryId,
+                    )
+                    .all()
+                )
+
+                valid_sub_ids = {str(v[0]) for v in valid_subs}
+
+                for sub_id in category.subCategoryIds:
+                    if sub_id not in valid_sub_ids:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Invalid subcategory for selected category",
+                        )
+
+                    db.add(
+                        WorkerSubCategoryModel(
+                            worker_id=reg.id,
+                            sub_category_skill_id=sub_id,
+                        )
+                    )
+        # ----------------------------
+        # Documents
+        # ----------------------------
+        if worker.documentInfo and worker.documentInfo.documents:
+            for doc in worker.documentInfo.documents:
+                db.add(
+                    WorkerDocumentModel(
+                        worker_id=reg.id,
+                        document_type=doc.documentType,
+                        document_url=doc.documentUrl,
+                    )
+                )
+
+        # ----------------------------
+        # Bank Details
+        # ----------------------------
+        if worker.bankDetails:
+            db.add(
+                WorkerBankDetailsModel(
+                    worker_id=reg.id,
+                    bank_name=worker.bankDetails.bankName,
+                    account_number=worker.bankDetails.accountNumber,
+                    ifsc_code=worker.bankDetails.ifscCode,
+                )
+            )
+
+        db.add(reg)
+        db.flush()
+        return {"id": str(reg.id), "name": reg.name}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("create_worker_service DB ERROR:", str(e))
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error creating worker registration",
+        )
+
+
+# -----------------------END Worker Registration Service -----------------------
 
 
 # -----------------------Get Worker Details by ID Service----------------------- #

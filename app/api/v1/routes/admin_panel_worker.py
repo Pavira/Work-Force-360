@@ -16,11 +16,11 @@ from app.services.admin_panel_worker_service import (
     get_worker_details_by_id_service,
     update_worker_status_to_approved_service,
     update_worker_status_to_unapproved_service,
+    admin_create_worker_service,
 )
 from app.utils.response import custom_response
 from firebase_admin import auth
 from app.services.worker_service import (
-    create_worker_service,
     generate_upload_url_service,
 )
 
@@ -311,7 +311,7 @@ def create_new_worker(
     """
     Create a new worker with all details.
     """
-    worker_db = create_worker_service(
+    worker_db = admin_create_worker_service(
         db=db,
         worker=body,
         firebase_uid=firebase_uid,
