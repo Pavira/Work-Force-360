@@ -21,14 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def _build_company_status_query(db: Session, target_status: str):
-    return db.query(
-        CompanyModel.id,
-        CompanyModel.company_name,
-        CompanyModel.contact_person_name,
-        CompanyModel.contact_phone,
-        CompanyModel.auth_phone,
-        CompanyModel.status,
-    ).filter(
+    return db.query(CompanyModel).filter(
         CompanyModel.status == target_status,
         CompanyModel.is_active.is_(True),
     )
@@ -123,10 +116,58 @@ def _serialize_company_rows(rows) -> list[dict]:
         items.append(
             {
                 "id": str(row.id),
+                "firebase_uid": row.firebase_uid,
                 "company_name": row.company_name,
+                "industry_id": str(row.industry_id) if row.industry_id else None,
+                "gst_number": row.gst_number,
+                "auth_phone": row.auth_phone,
                 "contact_person_name": row.contact_person_name,
-                "phone": row.contact_phone or row.auth_phone,
+                "contact_country_code": row.contact_country_code,
+                "contact_phone": row.contact_phone,
+                "contact_email": row.contact_email,
+                "logo_url": row.logo_url,
                 "status": row.status,
+                "status_approval_message_shown": row.status_approval_message_shown,
+                "is_verified": row.is_verified,
+                "addresses": [
+                    {
+                        "id": str(addr.id),
+                        "address": addr.address,
+                        "unit_name": addr.unit_name,
+                        "city": addr.city,
+                        "state": addr.state,
+                        "pincode": addr.pincode,
+                        "latitude": (
+                            to_shape(addr.location).y if addr.location else None
+                        ),
+                        "longitude": (
+                            to_shape(addr.location).x if addr.location else None
+                        ),
+                    }
+                    for addr in row.addresses
+                ],
+                # "bank_details": [
+                #     {
+                #         "id": str(bank.id),
+                #         "bank_name": bank.bank_name,
+                #         "account_holder_name": bank.account_holder_name,
+                #         "account_number": bank.account_number,
+                #         "ifsc_code": bank.ifsc_code,
+                #         "upi_id": bank.upi_id,
+                #     }
+                #     for bank in row.bank_details
+                # ],
+                # "documents": [
+                #     {
+                #         "id": str(doc.id),
+                #         "document_type": doc.document_type,
+                #         "document_url": doc.document_url,
+                #     }
+                #     for doc in row.documents
+                # ],
+                "is_active": row.is_active,
+                "created_at": row.created_at,
+                "updated_at": row.updated_at,
             }
         )
     return items

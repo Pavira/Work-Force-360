@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, logger, status
 from sqlalchemy.orm import Session
 
 from app.core.limiter import limiter
 from app.db.session import get_db
+from app.schemas.job_schema import JobPostingSchema
 from app.services.admin_panel_job_service import (
+    admin_create_job_post_service,
     assign_job_to_worker_service,
     get_all_assigned_jobs_service,
     get_all_cancelled_jobs_service,
@@ -15,7 +17,6 @@ from app.services.admin_panel_job_service import (
     get_job_details_by_id_service,
 )
 from app.utils.response import custom_response
-
 
 router = APIRouter()
 
@@ -274,3 +275,31 @@ def assign_job_to_worker(
         message="Job assigned to worker successfully",
         code=status.HTTP_200_OK,
     )
+
+
+# ------------------------Create New Job Service by Admin----------------------- #
+@router.post("/create_job_post", status_code=status.HTTP_201_CREATED)
+async def create_job_post(
+    payload: JobPostingSchema,
+    db: Session = Depends(get_db),
+):
+    """
+    Create job and trigger background matching.
+    """
+
+    try:
+        job = await admin_create_job_post_service(payload, db)
+
+        return custom_response(
+            success=True,
+            message="Job created successfully. Matching started.",
+            data=job,
+            code=status.HTTP_201_CREATED,
+        )
+
+    except Exception as exc:
+        logger.exception("Error creating job")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create job",
+        )

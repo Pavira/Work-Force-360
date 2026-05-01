@@ -51,7 +51,7 @@ class JobPostingSchema(BaseModel):
 
     # Workforce
     workers: int = Field(..., example=5)
-    experienceRequired: Optional[int] = Field(None, example="2")
+    experienceRequired: Optional[int] = Field(None, example=2)
 
     # Payment
     wage: int = Field(..., example=600)

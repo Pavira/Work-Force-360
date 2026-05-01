@@ -1,8 +1,10 @@
 import logging
+import traceback
 from uuid import UUID
 
+from asyncpg.types import Point
 from fastapi import HTTPException, status
-from geoalchemy2.shape import to_shape
+from geoalchemy2.shape import from_shape, to_shape
 from sqlalchemy import String, and_, case, func, or_
 from sqlalchemy.orm import Session
 
@@ -14,6 +16,7 @@ from app.models.industry_skill_models import (
 )
 from app.models.job_model import JobPostingModel
 from app.models.worker_models import WorkerRegistrationModel, WorkerSubCategoryModel
+from app.schemas.job_schema import JobPostingSchema
 from app.services.matching_service import find_matching_workers
 
 VALID_SEARCH_TYPES = {"contact_name", "phone", "company_id", "worker_id"}
@@ -729,3 +732,62 @@ def assign_job_to_worker_service(db: Session, job_id: str, worker_id: str) -> No
 
 
 # ------------------------End Assign Job to Worker Service----------------------- #
+
+
+# ------------------------Create New Job Service by Admin----------------------- #
+async def admin_create_job_post_service(payload: JobPostingSchema, db: Session) -> dict:
+    try:
+        location = from_shape(
+            Point(payload.longitude, payload.latitude),  # lng, lat order
+            srid=4326,
+        )
+
+        job = JobPostingModel(
+            company_id=payload.companyId,
+            skill_category_id=payload.skillCategoryId,
+            sub_category_id=payload.subCategoryId,
+            industry_type_id=payload.industryTypeId,
+            tier=payload.tier,
+            description=payload.description,
+            location=location,
+            work_address=payload.workAddress,
+            nearby_landmark=payload.nearbyLandmark,
+            scheduled_start_datetime=payload.scheduledStartDateTime,
+            scheduled_end_datetime=payload.scheduledEndDateTime,
+            scheduled_duration=payload.scheduledDuration,
+            duration_type=payload.durationType,
+            shift=payload.shift,
+            workers=payload.workers,
+            experience_required=payload.experienceRequired,
+            wage=payload.wage,
+            expected_total=payload.expectedTotal,
+            name=payload.name,
+            country_code=payload.countryCode,
+            phone_number=payload.phoneNumber,
+            email=payload.email,
+            language_preference=payload.languagePreference,
+            tool_provided=payload.toolProvided,
+            tool_details=payload.toolDetails,
+            special_instructions=payload.specialInstructions,
+        )
+        db.add(job)
+        db.flush()  # Flush to get the job ID for response, but don't commit yet
+        # db.commit()
+        # db.refresh(job)
+
+        return {
+            "id": job.id,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("create_job_post_service DB ERROR:", str(e))
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error creating job post",
+        )
+
+
+# ------------------------End Create New Job Service by Admin----------------------- #
