@@ -2,7 +2,7 @@ import logging
 import traceback
 from uuid import UUID
 
-from asyncpg.types import Point
+from shapely.geometry import Point
 from fastapi import HTTPException, status
 from geoalchemy2.shape import from_shape, to_shape
 from sqlalchemy import String, and_, case, func, or_
