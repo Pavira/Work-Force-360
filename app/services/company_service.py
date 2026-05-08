@@ -257,7 +257,7 @@ def update_contact_info_service(
 
 # -----------------------Update Document Service----------------------- #
 def update_document_info_service(
-    contact_info: DocumentInfoSchema,
+    document_info: DocumentInfoSchema,
     firebase_uid: str,
     db: Session,
 ) -> CompanyModel:
@@ -274,8 +274,8 @@ def update_document_info_service(
             )
 
         # Update document info
-        company_profile.logo_url = contact_info.logoUrl
-        for doc in contact_info.documents:
+        company_profile.logo_url = document_info.logoUrl
+        for doc in document_info.documents:
             db.add(
                 CompanyDocumentModel(
                     company_id=company_profile.id,
@@ -297,7 +297,7 @@ def update_document_info_service(
         print("DB ERROR 👉", e)  # or logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error updating contact info",
+            detail="Error updating document info",
         )
 
 

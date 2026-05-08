@@ -50,7 +50,6 @@ from app.services.company_service import (
     update_document_info_service_by_id,
 )
 
-
 router = APIRouter()
 
 
@@ -188,7 +187,7 @@ def update_document_info(
     Update document info for company profile (Firebase authenticated) .
     """
     company_db = update_document_info_service(
-        contact_info=company,
+        document_info=company,
         firebase_uid=current_user["uid"],
         db=db,
     )
