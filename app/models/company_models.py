@@ -8,8 +8,8 @@ from sqlalchemy import DateTime
 
 from app.db.base import Base
 
-# Document Types: GST Certificate(GST), Company Registration Certificate(CRC), PAN Card/ AADHAR - (IDP), logo - (LOGO)., Company photos - (CPPHOTO)
-# Status: draft, unapproved, approved, rejected, blocked
+# Document Types: GST Certificate(GST), Company Registration Certificate(CRC), PAN Card/ AADHAR - (IDP), logo - (LOGO)., Company photos - (CPHOTO)
+# Status: draft, unapproved, approved
 
 
 class CompanyModel(Base):

@@ -712,7 +712,7 @@ def assign_job_to_worker_service(db: Session, job_id: str, worker_id: str) -> No
         .filter(
             WorkerRegistrationModel.id == parsed_worker_id,
             WorkerRegistrationModel.is_active.is_(True),
-            WorkerRegistrationModel.is_available.is_(True),
+            # WorkerRegistrationModel.is_available.is_(True),
         )
         .first()
     )
